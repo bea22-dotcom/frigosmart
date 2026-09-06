@@ -5,28 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frigo Smart</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Libreria Universale Professionale per Codici a Barre (Zxing) -->
-    <script type="text/javascript" src="https://unpkg.com"></script>
 </head>
 <body>
 
     <div class="container">
         <h1>🍏 Il Mio Frigo Smart</h1>
 
-        <!-- SEZIONE SCANNER ZXING -->
+        <!-- SEZIONE FOTOCAMERA NATIVA -->
         <div class="scanner-section">
-            <h2>📷 Scanner Codici a Barre</h2>
+            <h2>📷 Gestione Fotocamera</h2>
             <div class="btn-group">
-                <button class="action-btn" onclick="avviaScanner()">🔋 Accendi Fotocamera</button>
+                <button class="action-btn" onclick="avviaFotocamera()">🔋 Accendi Fotocamera</button>
                 <button class="action-btn" onclick="cambiaTelecamera()">🔄 Gira Fotocamera</button>
             </div>
             
-            <!-- Contenitore video per Zxing -->
+            <!-- Video nativo standard per lo streaming HTML5 -->
             <div id="reader" style="width: 100%; max-width: 400px; min-height: 200px; margin: 15px auto; background-color: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                <video id="video" style="width: 100%; height: auto; border-radius: 8px;"></video>
+                <video id="video-stream" autoplay playsinline style="width: 100%; height: auto; display: none;"></video>
+                <p id="placeholder-text" style="color: #666; font-size: 14px; padding: 10px;">Fotocamera spenta. Fai clic su Accendi.</p>
             </div>
             
-            <p id="scan-result" style="font-weight: bold; margin-top: 10px; color: #333;">In attesa della telecamera...</p>
+            <p id="scan-result" style="font-weight: bold; margin-top: 10px; color: #333;">Fotocamera pronta per l'inquadratura.</p>
         </div>
 
         <!-- AGGIUNTA MANUALE -->
@@ -52,6 +51,6 @@
         </div>
     </div>
 
-   <script src="https://cloudflare.com"></script>
+    <script src="app.js"></script>
 </body>
 </html>

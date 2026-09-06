@@ -2,101 +2,44 @@
 let inventarioFrigo = JSON.parse(localStorage.getItem('Frigo')) || [];
 let listaSpesa = JSON.parse(localStorage.getItem('spesa')) || [];
 
-let codeReader = null;
-let idTelecameraCorrente = null;
-let tutteLeTelecamere = [];
+let streamCorrente = null;
+let modalitaCam = "environment"; // Parte usando la fotocamera posteriore
 
-// --- DATABASE PRODOTTI ---
-const DATABASE_PRODOTTI = {
-    "8001234567890": "Latte Parzialmente Scremato",
-    "8009876543210": "Yogurt alla Fragola",
-    "8012345678901": "Uova BIO (x6)",
-    "8000570005113": "Nutella Biscuits"
-};
-
-// --- FUNZIONE PER AVVIARE LO SCANNER (ZXING) ---
-function avviaScanner() {
-    // Se lo scanner è già attivo, fermalo prima di ripartire
-    if (codeReader) {
-        codeReader.reset();
+// --- FUNZIONE PER ACCENDERE LA FOTOCAMERA NATIVA ---
+function avviaFotocamera() {
+    // Se c'è già uno stream attivo, fermalo prima di ripartire
+    if (streamCorrente) {
+        streamCorrente.getTracks().forEach(track => track.stop());
     }
 
-    // Inizializza il lettore di codici a barre multi-formato di Zxing
-    codeReader = new ZXing.BrowserMultiFormatReader();
+    const video = document.getElementById("video-stream");
+    const placeholder = document.getElementById("placeholder-text");
 
-    // Rileva l'hardware video disponibile sul dispositivo (PC o Smartphone)
-    codeReader.listVideoInputDevices()
-        .then((videoInputDevices) => {
-            tutteLeTelecamere = videoInputDevices;
-            
-            if (videoInputDevices.length === 0) {
-                alert("Nessuna fotocamera rilevata sul dispositivo.");
-                return;
-            }
+    const vincoli = {
+        video: { facingMode: modalitaCam },
+        audio: false
+    };
 
-            // Selezione automatica della fotocamera posteriore ("back" o "environment")
-            if (!idTelecameraCorrente) {
-                const camPosteriore = videoInputDevices.find(device => 
-                    device.label.toLowerCase().includes('back') || 
-                    device.label.toLowerCase().includes('posteriore') || 
-                    device.label.toLowerCase().includes('environment')
-                );
-                // Se trova la posteriore usa quella, altrimenti prende la prima disponibile
-                idTelecameraCorrente = camPosteriore ? camPosteriore.deviceId : videoInputDevices[0].deviceId;
-            }
-
-            // Avvia la scansione continua sul tag <video id="video">
-            codeReader.decodeFromVideoDevice(idTelecameraCorrente, 'video', (result, err) => {
-                if (result) {
-                    const decodedText = result.text;
-                    gestisciCodiceRilevato(decodedText);
-                }
-                // Gli errori continui di fotogramma non decodificato vengono ignorati automaticamente
-            });
-            console.log("Scanner Zxing avviato correttamente.");
+    // Richiesta nativa dei permessi al browser
+    navigator.mediaDevices.getUserMedia(vincoli)
+        .then((stream) => {
+            streamCorrente = stream;
+            video.srcObject = stream;
+            video.style.display = "block";
+            if (placeholder) placeholder.style.display = "none";
+            document.getElementById("scan-result").innerText = "Fotocamera attiva con successo!";
         })
         .catch((err) => {
-            console.error("Errore di inizializzazione Zxing:", err);
-            alert("Errore nell'accesso ai video dispositivi.");
+            console.error("Errore di accesso alla fotocamera:", err);
+            alert("Impossibile avviare la fotocamera. Assicurati di aver concesso i permessi e che il sito usi HTTPS.");
         });
-}
-
-// Funzione che elabora il codice a barre letto
-function gestisciCodiceRilevato(decodedText) {
-    const resultElement = document.getElementById("scan-result");
-    if (resultElement) {
-        resultElement.innerText = "Codice letto: " + decodedText;
-    }
-
-    // Controllo e associazione con il Database Prodotti
-    if (DATABASE_PRODOTTI[decodedText]) {
-        const prodottoNome = DATABASE_PRODOTTI[decodedText];
-        
-        if (!inventarioFrigo.includes(prodottoNome)) {
-            inventarioFrigo.push(prodottoNome);
-            localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
-            renderizzaListe();
-            alert(`Aggiunto al frigo: ${prodottoNome}`);
-        } else {
-            alert(`${prodottoNome} è già presente nel frigorifero.`);
-        }
-    } else {
-        alert(`Codice letto: ${decodedText}\n(Prodotto non registrato nel database)`);
-    }
 }
 
 // --- FUNZIONE PER GIRARE LA FOTOCAMERA ---
 function cambiaTelecamera() {
-    if (codeReader && tutteLeTelecamere.length > 1) {
-        // Trova l'indice della telecamera corrente e passa alla successiva nell'elenco
-        let indiceCorrente = tutteLeTelecamere.findIndex(d => d.deviceId === idTelecameraCorrente);
-        let prossimoIndice = (indiceCorrente + 1) % tutteLeTelecamere.length;
-        idTelecameraCorrente = tutteLeTelecamere[prossimoIndice].deviceId;
-        
-        // Riavvia lo scanner con la nuova fotocamera scelta
-        avviaScanner();
-    } else {
-        alert("Nessun'altra fotocamera disponibile su cui switchare.");
+    modalitaCam = (modalitaCam === "environment") ? "user" : "environment";
+    if (streamCorrente) {
+        avviaFotocamera();
     }
 }
 

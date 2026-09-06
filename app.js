@@ -14,7 +14,7 @@ const DATABASE_PRODOTTI = {
     "8000570005113": "Nutella Biscuits"
 };
 
-// --- AVVIA FOTOCAMERA E SCANNER IN SEQUENZA ---
+// --- CONFIGURAZIONE AVANZATA SCANNER SAFARI/CHROME ---
 function avviaScanner() {
     if (streamCorrente) {
         streamCorrente.getTracks().forEach(track => track.stop());
@@ -25,32 +25,53 @@ function avviaScanner() {
 
     const video = document.getElementById("video-stream");
 
-    // 1. Chiediamo prima la fotocamera in modo nativo (Sicuro per Safari)
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: modalitaCam }, audio: false })
+    // Chiediamo una risoluzione maggiore e forziamo la messa a fuoco continua
+    const vincoliHardware= {
+        video: { 
+            facingMode: modalitaCam,
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            advanced: [{ focusMode: "continuous" }] // Forza l'autofocus continuo dello smartphone
+        },
+        audio: false
+    };
+
+    navigator.mediaDevices.getUserMedia(vincoliHardware)
         .then((stream) => {
             streamCorrente = stream;
             video.srcObject = stream;
             
-            // 2. Quando il video sta effettivamente girando, attiviamo ZXing
             video.onplaying = () => {
-                document.getElementById("scan-result").innerText = "Scanner attivo! Inquadra un codice.";
+                document.getElementById("scan-result").innerText = "Scanner attivo! Inquadra il codice a barre.";
                 attivaMotoreDecodifica();
             };
         })
         .catch((err) => {
-            console.error("Errore fotocamera Safari:", err);
-            alert("Impossibile accedere alla fotocamera. Verifica i permessi nelle impostazioni di Safari.");
+            console.error("Errore fotocamera:", err);
+            alert("Impossibile accedere alla fotocamera. Controlla i permessi.");
         });
 }
 
-// --- ATTIVAZIONE MOTORE DI DECODIFICA DOPO L'AVVIO DEL VIDEO ---
 function attivaMotoreDecodifica() {
-    codeReader = new ZXing.BrowserMultiFormatReader();
+    // Configura ZXing dicendogli ESPLICITAMENTE di cercare solo codici a barre (EAN)
+    const formatiScansione = new Map();
+    const formatiSupportati = [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8];
+    formatiScansione.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formatiSupportati);
     
-    // Usiamo lo stream già attivo sul tag video senza reinizializzare l'hardware
+    // Tentativo di lettura più aggressivo per immagini sfocate
+    formatiScansione.set(ZXing.DecodeHintType.TRY_HARDER, true);
+
+    codeReader = new ZXing.BrowserMultiFormatReader(formatiScansione);
+    
+    // Avvia la decodifica continua
     codeReader.decodeFromVideoElement('video-stream', (result, err) => {
         if (result) {
+            // Se legge il codice, fermiamo un secondo il lettore per evitare alert infiniti
+            codeReader.reset();
             gestisciCodiceRilevato(result.text);
+            
+            // Fai ripartire lo scanner dopo 2 secondi
+            setTimeout(avviaScanner, 2000);
         }
     });
 }

@@ -13,58 +13,50 @@ const DATABASE_PRODOTTI = {
     "8000570005113": "Nutella Biscuits"
 };
 
-// --- FUNZIONE PER AVVIARE LA FOTOCAMERA CORRETTA PER CODICI A BARRE ---
+// --- FUNZIONE PER AVVIARE LO SCANNER COMPLETO ---
 function avviaScanner() {
-    // ABILITAZIONE FORMATI: Diciamo subito alla libreria di attivare la lettura dei codici a barre (EAN)
-    html5Qrcode = new Html5Qrcode("reader", { 
-        formatsToSupport: [ 
-            Html5QrcodeSupportedFormats.EAN_13, 
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.QR_CODE 
-        ] 
-    });
-
-    // Configurazione del rettangolo per i codici a barre
+    // Configurazione del lettore grafico completo
     const config = {
-        fps: 15, // Più fotogrammi per secondo velocizzano la cattura
-        qrbox: { width: 320, height: 160 }, // Area rettangolare adatta alla forma dei codici a barre
-        experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true // Sfrutta l'accelerazione hardware del telefono se disponibile
-        }
+        fps: 15,                           // Maggiore frequenza per agganciare subito il codice
+        qrbox: { width: 300, height: 150 }, // Area rettangolare perfetta per i codici a barre dei prodotti
+        rememberLastUsedCamera: true,      // Ricorda la fotocamera scelta
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] // Usa lo streaming video live
     };
 
-    html5Qrcode.start(
-        { facingMode: modalitaCam }, 
-        config,
-        (decodedText) => {
-            // Riceve il codice a barre letto
-            const resultElement = document.getElementById("scan-result");
-            if (resultElement) {
-                resultElement.innerText = "Codice: " + decodedText;
-            }
+    // Crea l'interfaccia completa della libreria dentro il tuo div "reader"
+    const html5QrcodeScanner = new Html5QrcodeScanner("reader", config, /* verbose= */ false);
 
-            // Cerca il codice nel database dei prodotti
-            if (DATABASE_PRODOTTI[decodedText]) {
-                const prodottoNome = DATABASE_PRODOTTI[decodedText];
-                
-                if (!inventarioFrigo.includes(prodottoNome)) {
-                    inventarioFrigo.push(prodottoNome);
-                    localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
-                    renderizzaListe();
-                    alert(`Aggiunto: ${prodottoNome}`);
-                } else {
-                    alert(`${prodottoNome} è già nel frigorifero.`);
-                }
-            } else {
-                alert(`Codice letto: ${decodedText}\n(Prodotto non presente nel database)`);
-            }
-        },
-        (errorMessage) => {
-            // Ignora gli errori di mancata scansione sui singoli fotogrammi
+    // Avvia il rendering passando le funzioni di successo e di errore
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+}
+
+// Funzione richiamata automaticamente quando viene letto un codice
+function onScanSuccess(decodedText, decodedResult) {
+    const resultElement = document.getElementById("scan-result");
+    if (resultElement) {
+        resultElement.innerText = "Codice rilevato: " + decodedText;
+    }
+
+    // Controlla se il codice appartiene al tuo database prodotti
+    if (DATABASE_PRODOTTI[decodedText]) {
+        const prodottoNome = DATABASE_PRODOTTI[decodedText];
+        
+        if (!inventarioFrigo.includes(prodottoNome)) {
+            inventarioFrigo.push(prodottoNome);
+            localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
+            renderizzaListe();
+            alert(`Aggiunto al frigo: ${prodottoNome}`);
+        } else {
+            alert(`${prodottoNome} è già presente nel frigorifero.`);
         }
-    ).catch((err) => {
-        console.error("Errore di avvio fotocamera:", err);
-    });
+    } else {
+        alert(`Codice letto: ${decodedText}\nProdotto non trovato nel database.`);
+    }
+}
+
+// Funzione vuota per gestire la ricerca continua dei fotogrammi senza intasare la console
+function onScanFailure(error) {
+    // Lasciare vuoto
 }
 
 // --- FUNZIONE PER GIRARE LA FOTOCAMERA ---

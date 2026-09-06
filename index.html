@@ -11,7 +11,7 @@
     <div class="container">
         <h1>🍏 Il Mio Frigo Smart</h1>
 
-        <!-- SEZIONE SCANNER ALIMENTARE -->
+        <!-- SEZIONE SCANNER LOCALE NATIVO -->
         <div class="scanner-section">
             <h2>📷 Scanner Codici a Barre</h2>
             <div class="btn-group" style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
@@ -19,7 +19,7 @@
             </div>
 
             <!-- Input per scattare la foto -->
-            <input type="file" id="file-input" accept="image/*" capture="environment" style="display: none;" onchange="scansionaProdottoAlimentare(event)">
+            <input type="file" id="file-input" accept="image/*" capture="environment" style="display: none;" onchange="scansionaFotoLocale(event)">
             
             <div id="reader" style="width: 100%; max-width: 400px; min-height: 200px; margin: 15px auto; background-color: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px dashed #ccc;">
                 <img id="image-preview" style="width: 100%; height: auto; display: none; border-radius: 8px;" />

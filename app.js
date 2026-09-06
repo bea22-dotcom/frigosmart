@@ -3,8 +3,8 @@ let inventarioFrigo = JSON.parse(localStorage.getItem('Frigo')) || [];
 let listaSpesa = JSON.parse(localStorage.getItem('spesa')) || [];
 
 let codeReader = null;
-let idTelecameraCorrente = null;
-let tutteLeTelecamere = [];
+let streamCorrente = null;
+let modalitaCam = "environment"; 
 
 // --- DATABASE PRODOTTI ---
 const DATABASE_PRODOTTI = {
@@ -14,57 +14,49 @@ const DATABASE_PRODOTTI = {
     "8000570005113": "Nutella Biscuits"
 };
 
-// --- FUNZIONE PER AVVIARE LO SCANNER COMPATIBILE SAFARI ---
+// --- AVVIA FOTOCAMERA E SCANNER IN SEQUENZA ---
 function avviaScanner() {
+    if (streamCorrente) {
+        streamCorrente.getTracks().forEach(track => track.stop());
+    }
     if (codeReader) {
         codeReader.reset();
     }
 
-    // Configura ZXing per leggere sia codici a barre (EAN) che QR
-    codeReader = new ZXing.BrowserMultiFormatReader();
+    const video = document.getElementById("video-stream");
 
-    codeReader.listVideoInputDevices()
-        .then((videoInputDevices) => {
-            tutteLeTelecamere = videoInputDevices;
+    // 1. Chiediamo prima la fotocamera in modo nativo (Sicuro per Safari)
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: modalitaCam }, audio: false })
+        .then((stream) => {
+            streamCorrente = stream;
+            video.srcObject = stream;
             
-            if (videoInputDevices.length === 0) {
-                alert("Nessuna fotocamera rilevata.");
-                return;
-            }
-
-            // Cerca la fotocamera posteriore (ideale per i codici a barre)
-            if (!idTelecameraCorrente) {
-                const camPosteriore = videoInputDevices.find(device => 
-                    device.label.toLowerCase().includes('back') || 
-                    device.label.toLowerCase().includes('posteriore') || 
-                    device.label.toLowerCase().includes('environment')
-                );
-                idTelecameraCorrente = camPosteriore ? camPosteriore.deviceId : videoInputDevices[0].deviceId;
-            }
-
-            // Avvia la scansione agganciandola al tag video 'video-stream'
-            codeReader.decodeFromVideoDevice(idTelecameraCorrente, 'video-stream', (result, err) => {
-                if (result) {
-                    gestisciCodiceRilevato(result.text);
-                }
-            });
-
-            // Trucco per Safari: forza la riproduzione video se dovesse congelarsi
-            const video = document.getElementById("video-stream");
-            if (video) {
-                video.play().catch(e => console.log("Play forzato abilitato"));
-            }
-
-            document.getElementById("scan-result").innerText = "Scanner attivo! Inquadra un codice.";
+            // 2. Quando il video sta effettivamente girando, attiviamo ZXing
+            video.onplaying = () => {
+                document.getElementById("scan-result").innerText = "Scanner attivo! Inquadra un codice.";
+                attivaMotoreDecodifica();
+            };
         })
         .catch((err) => {
-            console.error("Errore scanner:", err);
-            alert("Errore nell'attivazione dello scanner.");
+            console.error("Errore fotocamera Safari:", err);
+            alert("Impossibile accedere alla fotocamera. Verifica i permessi nelle impostazioni di Safari.");
         });
 }
 
-// Elaborazione del codice letto
+// --- ATTIVAZIONE MOTORE DI DECODIFICA DOPO L'AVVIO DEL VIDEO ---
+function attivaMotoreDecodifica() {
+    codeReader = new ZXing.BrowserMultiFormatReader();
+    
+    // Usiamo lo stream già attivo sul tag video senza reinizializzare l'hardware
+    codeReader.decodeFromVideoElement('video-stream', (result, err) => {
+        if (result) {
+            gestisciCodiceRilevato(result.text);
+        }
+    });
+}
+
 function gestisciCodiceRilevato(decodedText) {
+    // Blocco per evitare letture duplicate ravvicinate
     const resultElement = document.getElementById("scan-result");
     if (resultElement) {
         resultElement.innerText = "Codice letto: " + decodedText;
@@ -86,14 +78,8 @@ function gestisciCodiceRilevato(decodedText) {
 
 // --- FUNZIONE PER GIRARE LA TELECAMERA ---
 function cambiaTelecamera() {
-    if (codeReader && tutteLeTelecamere.length > 1) {
-        let indiceCorrente = tutteLeTelecamere.findIndex(d => d.deviceId === idTelecameraCorrente);
-        let prossimoIndice = (indiceCorrente + 1) % tutteLeTelecamere.length;
-        idTelecameraCorrente = tutteLeTelecamere[prossimoIndice].deviceId;
-        avviaScanner();
-    } else {
-        alert("Nessun'altra fotocamera rilevata.");
-    }
+    modalitaCam = (modalitaCam === "environment") ? "user" : "environment";
+    avviaScanner();
 }
 
 // --- AGGIUNTA MANUALE ---

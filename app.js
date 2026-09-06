@@ -3,7 +3,7 @@ let inventarioFrigo = JSON.parse(localStorage.getItem('Frigo')) || [];
 let listaSpesa = JSON.parse(localStorage.getItem('spesa')) || [];
 
 let codeReader = new ZXing.BrowserMultiFormatReader();
-let modalitaCam = "environment"; // "environment" forza la telecamera posteriore
+let modalitaCam = "environment"; 
 
 // --- DATABASE PRODOTTI ---
 const DATABASE_PRODOTTI = {
@@ -13,35 +13,49 @@ const DATABASE_PRODOTTI = {
     "8000570005113": "Nutella Biscuits"
 };
 
-// --- AVVIA SCANNER AUTOMATICO (METODO GUIDATO ZXING) ---
-function avviaScanner() {
-    document.getElementById("scan-result").innerText = "Inizializzazione fotocamera...";
+// --- METODO 1: SCANSIONE DA FOTO SCATTATA (MESSA A FUOCO PERFETTA) ---
+function scansionaDaFoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-    // Resetta lo scanner se era già avviato
+    document.getElementById("scan-result").innerText = "Analisi della foto in corso...";
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = function () {
+            // ZXing analizza l'immagine statica ad alta risoluzione
+            codeReader.decodeFromImageElement(img)
+                .then((result) => {
+                    gestisciCodiceRilevato(result.text);
+                })
+                .catch((err) => {
+                    console.error(err);
+                    alert("Impossibile rilevare il codice a barre da questa foto. Assicurati che l'immagine sia ben illuminata, vicina e non mossa.");
+                    document.getElementById("scan-result").innerText = "Scansione fallita. Riprova.";
+                });
+        };
+    };
+    reader.readAsDataURL(file);
+}
+
+// --- METODO 2: STREAMING LIVE STANDARD ---
+function avviaScanner() {
+    document.getElementById("scan-result").innerText = "Inizializzazione streaming...";
     codeReader.reset();
 
-    // Definiamo i vincoli della fotocamera (posteriore e con risoluzione ideale)
     const vincoli = {
-        video: { 
-            facingMode: modalitaCam,
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-        }
+        video: { facingMode: modalitaCam, width: { ideal: 1280 }, height: { ideal: 720 } }
     };
 
-    // ZXing fa tutto da solo: apre il video, lo aggancia all'HTML e scansiona continuamente
     codeReader.decodeFromConstraints(vincoli, 'video-stream', (result, err) => {
         if (result) {
-            // Codice rilevato con successo!
             gestisciCodiceRilevato(result.text);
-        }
-        if (err && !(err instanceof ZXing.NotFoundException)) {
-            // Logga solo errori critici veri, ignorando i fotogrammi vuoti
-            console.error(err);
         }
     });
 
-    document.getElementById("scan-result").innerText = "Scanner attivo! Inquadra un codice a barre.";
+    document.getElementById("scan-result").innerText = "Streaming attivo. Inquadra il codice.";
 }
 
 // --- GESTIONE DEL CODICE LETTO ---
@@ -56,19 +70,20 @@ function gestisciCodiceRilevato(decodedText) {
             localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
             renderizzaListe();
             alert(`Aggiunto al frigo: ${prodottoNome}`);
+        } else {
+            alert(`${prodottoNome} è già presente.`);
         }
     } else {
-        alert(`Codice letto: ${decodedText}\nProdotto non presente nel database.`);
+        alert(`Codice letto: ${decodedText}\nProdotto non a database. Puoi inserirlo a mano.`);
     }
 }
 
-// --- FUNZIONE PER GIRARE LA TELECAMERA ---
+// --- ALTRE FUNZIONI GESTIONE LISTE ---
 function cambiaTelecamera() {
     modalitaCam = (modalitaCam === "environment") ? "user" : "environment";
     avviaScanner();
 }
 
-// --- AGGIUNTA MANUALE ---
 function aggiungiManuale() {
     const input = document.getElementById("manual-input");
     const prodottoNome = input.value.trim();
@@ -82,7 +97,6 @@ function aggiungiManuale() {
     }
 }
 
-// --- SEGNALA MANCANTE ---
 function segnalaMancante(prodottoNome) {
     inventarioFrigo = inventarioFrigo.filter(p => p !== prodottoNome);
     localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
@@ -104,7 +118,6 @@ function comprato(prodottoNome) {
     renderizzaListe();
 }
 
-// --- RENDERIZZA INTERFACCIA ---
 function renderizzaListe() {
     const frigoUl = document.getElementById("frigo-list");
     const spesaUl = document.getElementById("spesa-list");

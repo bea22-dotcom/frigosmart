@@ -1,11 +1,11 @@
-<!<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frigo Smart</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Carica la libreria ufficiale dello scanner -->
+    <!-- Carica la libreria dello scanner -->
     <script src="https://unpkg.com" type="text/javascript"></script>
 </head>
 <body>
@@ -21,11 +21,11 @@
             </div>
         </div>
 
-        <!-- Sezione Scanner Aggiornata -->
+        <!-- Sezione Scanner con Pulsante Cambio Cam -->
         <div class="scanner-section">
             <h2>📷 Scanner Codici a Barre</h2>
-            <!-- Menu per cambiare telecamera -->
-            <select id="camera-select" style="margin-bottom: 15px; padding: 8px; border-radius: 6px; width: 80%; font-size: 16px;"></select>
+            <!-- Pulsante per girare la fotocamera -->
+            <button id="switch-cam-btn" class="action-btn" onclick="cambiaTelecamera()" style="margin-bottom: 15px; background-color: #f39c12; width: 80%; padding: 12px; font-size: 16px;">🔄 Gira Fotocamera</button>
             <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto; border-radius: 8px; overflow: hidden;"></div>
             <p id="scan-result" style="font-weight: bold; color: #27ae60; margin-top: 10px;">In attesa della telecamera...</p>
         </div>

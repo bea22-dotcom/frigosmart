@@ -1,16 +1,15 @@
-// Stato dell'inventario preso dal LocalStorage
+// Stato dell'inventario
 let inventarioFrigo = JSON.parse(localStorage.getItem('frigo')) || [];
 let listaSpesa = JSON.parse(localStorage.getItem('spesa')) || [];
 
 let html5QrCode;
-let currentCameraId;
+let modalitaCam = "environment"; // Parte provando quella posteriore
 
-// Database temporaneo per i test dei codici a barre
 const DATABASE_PRODOTTI = {
     "8001234567890": "Latte Parzialmente Scremato",
     "8009876543210": "Yogurt alla Fragola",
     "8012345678901": "Uova BIO (x6)",
-    "8000570005113": "Nutella Biscuits" // Esempio codice reale
+    "8000570005113": "Nutella Biscuits"
 };
 
 function renderizzaListe() {
@@ -69,7 +68,6 @@ function compraProdotto(prodotto) {
     }
 }
 
-// Inizializzazione e gestione delle telecamere
 function onScanSuccess(decodedText, decodedResult) {
     const resultText = document.getElementById("scan-result");
     let nomeProdotto = DATABASE_PRODOTTI[decodedText] || `Prodotto Sconosciuto (${decodedText})`;
@@ -77,64 +75,52 @@ function onScanSuccess(decodedText, decodedResult) {
     resultText.innerText = `Scansionato: ${nomeProdotto}`;
     segnalaMancante(nomeProdotto);
     
-    if (navigator.vibrate) navigator.vibrate(200); // Vibrazione di conferma
+    if (navigator.vibrate) navigator.vibrate(200);
 }
 
-async function avviaScanner() {
+// Avvia lo scanner con la modalità corrente
+function avviaScanner() {
     const resultText = document.getElementById("scan-result");
-    const cameraSelect = document.getElementById("camera-select");
     
-    html5QrCode = new Html5Qrcode("reader");
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+    }
 
-    Html5Qrcode.getCameras().then(devices => {
-        if (devices && devices.length > 0) {
-            cameraSelect.innerHTML = "";
-            
-            // Popola il menu a tendina con le telecamere trovate
-            devices.forEach((device, index) => {
-                let option = document.createElement("option");
-                option.value = device.id;
-                option.text = device.label || `Telecamera ${index + 1}`;
-                cameraSelect.appendChild(option);
-            });
-
-            // Seleziona preferibilmente la cam posteriore (back/environment)
-            let backCamera = devices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('posteriore'));
-            currentCameraId = backCamera ? backCamera.id : devices[0].id;
-            cameraSelect.value = currentCameraId;
-
-            startCamera(currentCameraId);
-
-            // Cambia telecamera quando l'utente la seleziona dal menu
-            cameraSelect.addEventListener('change', (e) => {
-                html5QrCode.stop().then(() => {
-                    startCamera(e.target.value);
-                }).catch(err => console.error(err));
-            });
-
-        } else {
-            resultText.innerText = "Nessuna telecamera rilevata.";
-        }
-    }).catch(err => {
-        console.error(err);
-        resultText.innerText = "Errore permessi fotocamera.";
-    });
-}
-
-function startCamera(cameraId) {
-    const resultText = document.getElementById("scan-result");
     html5QrCode.start(
-        cameraId, 
-        { fps: 10, qrbox: { width: 250, height: 150 } }, // Ottimizzato rettangolare per codici a barre
+        { facingMode: modalitaCam }, 
+        { fps: 10, qrbox: { width: 250, height: 150 } },
         onScanSuccess
     ).then(() => {
         resultText.innerText = "Scanner attivo. Inquadra un codice a barre.";
+        resultText.style.color = "green";
     }).catch(err => {
-        resultText.innerText = "Impossibile avviare questa telecamera.";
+        console.error(err);
+        resultText.innerText = "Errore di avvio. Prova a girare la fotocamera.";
+        resultText.style.color = "orange";
     });
 }
 
-// Avvia l'app
+// Funzione legata al pulsante per forzare il cambio cam
+function cambiaTelecamera() {
+    const resultText = document.getElementById("scan-result");
+    resultText.innerText = "Cambio telecamera in corso...";
+    
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            // Inverte la modalità: se era posteriore diventa frontale e viceversa
+            modalitaCam = (modalitaCam === "environment") ? "user" : "environment";
+            avviaScanner();
+        }).catch(err => {
+            console.error("Errore stop cam:", err);
+            // Forza comunque il riavvio se era già spenta
+            modalitaCam = (modalitaCam === "environment") ? "user" : "environment";
+            avviaScanner();
+        });
+    } else {
+        avviaScanner();
+    }
+}
+
+// Avvio iniziale
 renderizzaListe();
-// Ritardo controllato per evitare conflitti di caricamento su GitHub Pages
-setTimeout(avviaScanner, 500);
+setTimeout(avviaScanner, 1000);

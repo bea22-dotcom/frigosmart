@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frigo Scanner & Lista Spesa</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Il Mio Frigo Smart</h1>
+
+        <!-- Sezione Inserimento Manuale -->
+        <div class="manual-section">
+            <h2>➕ Aggiungi Prodotto a Mano</h2>
+            <div class="input-group">
+                <input type="text" id="manual-input" placeholder="Es. Latte, Uova, Mele...">
+                <button class="action-btn" onclick="aggiungiManuale()">Aggiungi</button>
+            </div>
+        </div>
+
+        <!-- Sezione Scanner Nativo -->
+        <div class="scanner-section">
+            <h2>📷 Fotocamera / Scanner</h2>
+            <div class="video-container">
+                <video id="webcam" autoplay playsinline></video>
+            </div>
+            <p id="scan-result">In attesa della telecamera...</p>
+        </div>
+
+        <!-- Sezione Inventario e Spesa -->
+        <div class="lists-container">
+            <div class="list-box">
+                <h2>🍏 Nel Frigorifero</h2>
+                <ul id="frigo-list"></ul>
+            </div>
+            
+            <div class="list-box">
+                <h2>🛒 Prodotti Mancanti (Spesa)</h2>
+                <ul id="spesa-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

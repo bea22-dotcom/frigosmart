@@ -58,7 +58,7 @@ function avviaScanner() {
 
 // --- FUNZIONE PER GIRARE LA FOTOCAMERA ---
 // Scritta tutta minuscola per corrispondere esattamente al tuo index.html: onclick="cambiatelecamera()"
-function cambiatelecamera() {
+function cambiaTelecamera() {
     if (html5Qrcode) {
         html5Qrcode.stop().then(() => {
             // Inverte la modalità tra "environment" (posteriore) e "user" (frontale)

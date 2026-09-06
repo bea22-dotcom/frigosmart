@@ -71,7 +71,12 @@ async function avviaTelecamera() {
     if (!video || !resultText) return;
     
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+       // NUOVO CODICE CON ROTAZIONE SULLA TELECAMERA POSTERIORE
+const stream = await navigator.mediaDevices.getUserMedia({ 
+    video: { 
+        facingMode: "environment" 
+    } 
+});
         video.srcObject = stream;
         resultText.innerText = "Fotocamera attiva! Usa il pulsante sopra o inquadra i codici.";
         resultText.style.color = "green";

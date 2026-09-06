@@ -1,41 +1,39 @@
-// --- STATO DELL'INVENTARIO ---
 let inventarioFrigo = JSON.parse(localStorage.getItem('Frigo')) || [];
 let listaSpesa = JSON.parse(localStorage.getItem('spesa')) || [];
 
 let streamCorrente = null;
-let modalitaCam = "environment"; // Parte usando la fotocamera posteriore
+let modalitaCam = "environment"; 
 
-// --- FUNZIONE PER ACCENDERE LA FOTOCAMERA NATIVA ---
 function avviaFotocamera() {
-    // Se c'è già uno stream attivo, fermalo prima di ripartire
     if (streamCorrente) {
         streamCorrente.getTracks().forEach(track => track.stop());
     }
 
     const video = document.getElementById("video-stream");
-    const placeholder = document.getElementById("placeholder-text");
 
     const vincoli = {
-        video: { facingMode: modalitaCam },
+        video: { 
+            facingMode: modalitaCam
+        },
         audio: false
     };
 
-    // Richiesta nativa dei permessi al browser
     navigator.mediaDevices.getUserMedia(vincoli)
         .then((stream) => {
             streamCorrente = stream;
             video.srcObject = stream;
-            video.style.display = "block";
-            if (placeholder) placeholder.style.display = "none";
-            document.getElementById("scan-result").innerText = "Fotocamera attiva con successo!";
+            
+            // Forza iOS a fare il play del video dopo aver ricevuto lo stream
+            video.play().catch(e => console.log("Play forzato protetto da Safari"));
+            
+            document.getElementById("scan-result").innerText = "Fotocamera attiva!";
         })
         .catch((err) => {
-            console.error("Errore di accesso alla fotocamera:", err);
-            alert("Impossibile avviare la fotocamera. Assicurati di aver concesso i permessi e che il sito usi HTTPS.");
+            console.error("Errore Safari Camera:", err);
+            alert("Per attivare la fotocamera su Safari vai in Impostazioni -> Safari -> Fotocamera -> Consenti.");
         });
 }
 
-// --- FUNZIONE PER GIRARE LA FOTOCAMERA ---
 function cambiaTelecamera() {
     modalitaCam = (modalitaCam === "environment") ? "user" : "environment";
     if (streamCorrente) {
@@ -43,7 +41,6 @@ function cambiaTelecamera() {
     }
 }
 
-// --- AGGIUNTA MANUALE ---
 function aggiungiManuale() {
     const input = document.getElementById("manual-input");
     const prodottoNome = input.value.trim();
@@ -53,13 +50,10 @@ function aggiungiManuale() {
             localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
             renderizzaListe();
             input.value = "";
-        } else {
-            alert("Prodotto già presente nel frigorifero.");
         }
     }
 }
 
-// --- SEGNALA MANCANTE ---
 function segnalaMancante(prodottoNome) {
     inventarioFrigo = inventarioFrigo.filter(p => p !== prodottoNome);
     localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
@@ -70,7 +64,6 @@ function segnalaMancante(prodottoNome) {
     renderizzaListe();
 }
 
-// --- COMPRATO ---
 function comprato(prodottoNome) {
     listaSpesa = listaSpesa.filter(p => p !== prodottoNome);
     localStorage.setItem('spesa', JSON.stringify(listaSpesa));
@@ -81,7 +74,6 @@ function comprato(prodottoNome) {
     renderizzaListe();
 }
 
-// --- RENDERIZZA INTERFACCIA ---
 function renderizzaListe() {
     const frigoUl = document.getElementById("frigo-list");
     const spesaUl = document.getElementById("spesa-list");
@@ -101,7 +93,6 @@ function renderizzaListe() {
     });
 }
 
-// --- AVVIO INTERFACCIA ---
 window.addEventListener("DOMContentLoaded", () => {
     renderizzaListe();
 });

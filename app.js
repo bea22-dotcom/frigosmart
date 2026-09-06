@@ -1,85 +1,61 @@
-// Stato dell'inventario preso dal LocalStorage
-let inventarioFrigo = JSON.parse(localStorage.getItem('frigo')) || [];
-let listaSpesa = JSON.parse(localStorage.getItem('spesa')) || [];
-
-// Funzione per inserire a mano i prodotti
-function aggiungiManuale() {
-    const input = document.getElementById("manual-input");
-    const nomeProdotto = input.value.trim();
-    
-    if (nomeProdotto !== "") {
-        // All'inizio lo inseriamo nel frigo
-        if (!inventarioFrigo.includes(nomeProdotto)) {
-            inventarioFrigo.push(nomeProdotto);
-            salvaEAgiorna();
-        }
-        input.value = ""; // Svuota il campo di testo
-    }
-}
-
-// Funzione per aggiungere un prodotto alla lista della spesa (mancante)
-function segnalaMancante(prodotto) {
-    if (!listaSpesa.includes(prodotto)) {
-        listaSpesa.push(prodotto);
-        inventarioFrigo = inventarioFrigo.filter(item => item !== prodotto);
-        salvaEAgiorna();
-    }
-}
-
-// Funzione per rimettere il prodotto nel frigo (comprato)
-function compraProdotto(prodotto) {
-    if (!inventarioFrigo.includes(prodotto)) {
-        inventarioFrigo.push(prodotto);
-        listaSpesa = listaSpesa.filter(item => item !== prodotto);
-        salvaEAgiorna();
-    }
-}
-
-// Salva i dati nel browser e aggiorna la schermata
-function salvaEAgiorna() {
-    localStorage.setItem('frigo', JSON.stringify(inventarioFrigo));
-    localStorage.setItem('spesa', JSON.stringify(listaSpesa));
-    renderizzaListe();
-}
-
-function renderizzaListe() {
-    const frigoUl = document.getElementById("frigo-list");
-    const spesaUl = document.getElementById("spesa-list");
-    
-    frigoUl.innerHTML = "";
-    spesaUl.innerHTML = "";
-
-    inventarioFrigo.forEach(prod => {
-        let li = document.createElement("li");
-        li.innerHTML = `${prod} <button onclick="segnalaMancante('${prod}')">Finito ❌</button>`;
-        frigoUl.appendChild(li);
-    });
-
-    listaSpesa.forEach(prod => {
-        let li = document.createElement("li");
-        li.innerHTML = `${prod} <button class="action-btn" onclick="compraProdotto('${prod}')">Comprato ✔️</button>`;
-        spesaUl.appendChild(li);
-    });
-}
-
-// Forza l'attivazione nativa della telecamera
+// Funzione per avviare la telecamera e analizzare i codici a barre
 async function avviaTelecamera() {
     const video = document.getElementById('webcam');
     const resultText = document.getElementById('scan-result');
     
+    // Controlla se il browser del telefono supporta lo scanner integrato
+    if (!('BarcodeDetector' in window)) {
+        resultText.innerText = "Scanner automatico non supportato su questo browser. Usa l'inserimento manuale o Chrome/Edge.";
+        resultText.style.color = "orange";
+    }
+
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "environment" } 
+            video: { facingMode: "environment", focusMode: "continuous" } 
         });
         video.srcObject = stream;
-        resultText.innerText = "Telecamera attiva! (Funzione scanner nativa)";
+        resultText.innerText = "Fotocamera attiva. Inquadra un codice a barre...";
+
+        // Inizializza il rilevatore di codici a barre (EAN-13 è lo standard dei supermercati)
+        const barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code'] });
+        
+        // Avvia il ciclo continuo di scansione ogni 300 millisecondi
+        setInterval(async () => {
+            if (video.readyState === video.HAVE_CURRENT_DATA) {
+                try {
+                    const barcodes = await barcodeDetector.detect(video);
+                    if (barcodes.length > 0) {
+                        const codiceRilevato = barcodes[0].rawValue;
+                        
+                        // Piccolo Database locale per il test
+                        const DATABASE_PRODOTTI = {
+                            "8001234567890": "Latte Parzialmente Scremato",
+                            "8009876543210": "Yogurt alla Fragola",
+                            "8012345678901": "Uova BIO (x6)"
+                        };
+
+                        let nomeProdotto = DATABASE_PRODOTTI[codiceRilevato] || `Prodotto Sconosciuto (${codiceRilevato})`;
+                        resultText.innerText = `Rilevato: ${nomeProdotto}`;
+                        
+                        // Sposta il prodotto nei mancanti (Finito)
+                        segnalaMancante(nomeProdotto);
+                        
+                        // Vibrazione di conferma sul telefono (se supportata)
+                        if (navigator.vibrate) navigator.vibrate(200);
+                    }
+                } catch (e) {
+                    // Ignora gli errori di frame vuoti durante il movimento
+                }
+            }
+        }, 300);
+
     } catch (err) {
         console.error("Errore accesso cam: ", err);
-        resultText.innerText = "Impossibile avviare la telecamera. Usa l'inserimento manuale.";
+        resultText.innerText = "Impossibile accedere alla fotocamera. Controlla i permessi dello smartphone.";
         resultText.style.color = "red";
     }
 }
 
-// Avvia tutto all'apertura della pagina
+// Avvia i componenti all'apertura della pagina
 renderizzaListe();
 avviaTelecamera();

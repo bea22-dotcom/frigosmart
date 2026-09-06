@@ -8,53 +8,63 @@ const DATABASE_PRODOTTI = {
     "8009876543210": "Yogurt alla Fragola",
     "8012345678901": "Uova BIO (x6)",
     "8000570005113": "Nutella Biscuits",
-    "8002270015034": "The Freddo San Benedetto" // Aggiunto per i test
+    "8002270015034": "The Freddo San Benedetto"
 };
 
-// --- SCANSIONE DELLA FOTO UTILIZZANDO IL MOTORE INTERNO DEL TELEFONO ---
-function scansionaFotoLocale(event) {
+// --- ELABORAZIONE E ANALISI DELLO SCATTO VIA CANVAS ---
+function elaboraScattoConCanvas(event) {
     const file = event.target.files[0];
     if (!file) return;
 
     const resultElement = document.getElementById("scan-result");
     const previewImg = document.getElementById("image-preview");
-    const placeholder = document.getElementById("placeholder-text");
 
     resultElement.innerText = "🔍 Analisi della foto in corso...";
 
-    // Mostra l'anteprima della foto appena scattata
-    previewImg.src = URL.createObjectURL(file);
-    previewImg.style.display = "block";
-    if (placeholder) placeholder.style.display = "none";
+    // Creiamo un oggetto per leggere il file
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // Assegniamo la foto all'elemento visibile
+        previewImg.src = e.target.result;
 
-    // Controlliamo se il browser supporta il rilevatore nativo dei codici
-    if (!('BarcodeDetector' in window)) {
-        resultElement.innerText = "❌ Errore sistema.";
-        alert("Il browser di questo telefono non supporta l'analisi nativa delle immagini. Assicurati di usare Google Chrome o aggiorna il sistema del telefono.");
-        return;
-    }
+        previewImg.onload = function() {
+            // Controlliamo se il browser supporta il rilevatore nativo
+            if (!('BarcodeDetector' in window)) {
+                resultElement.innerText = "❌ Sistema non supportato.";
+                alert("Il browser non supporta il lettore nativo. Assicurati di usare Google Chrome aggiornato.");
+                return;
+            }
 
-    // Creiamo il lettore nativo configurato per i codici a barre dei negozi (EAN)
-    const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code'] });
+            // CREAZIONE CANVAS INVISIBILE PER LA PULIZIA DEI PIXEL
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = previewImg.naturalWidth;
+            canvas.height = previewImg.naturalHeight;
+            
+            // Disegnamo l'immagine sul canvas alla massima risoluzione
+            ctx.drawImage(previewImg, 0, 0);
 
-    // Aspettiamo che l'immagine sia caricata nel tag <img> prima di analizzarla
-    previewImg.onload = function() {
-        detector.detect(previewImg)
-            .then(barcodes => {
-                if (barcodes.length > 0) {
-                    // Prende il valore testuale del codice a barre trovato
-                    const codiceLetto = barcodes[0].rawValue;
-                    gestisciCodiceRilevato(codiceLetto);
-                } else {
-                    resultElement.innerText = "❌ Codice non trovato nella foto.";
-                    alert("Non è stato rilevato alcun codice a barre. Scatta la foto tenendo il codice ben dritto, centrato e sotto una buona luce.");
-                }
-            })
-            .catch(err => {
-                console.error("Errore decodifica:", err);
-                resultElement.innerText = "❌ Errore durante l'analisi.";
-            });
+            // Inizializziamo il BarcodeDetector per tutti i formati commerciali (EAN)
+            const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code'] });
+
+            // Diamo in pasto il canvas al lettore, che è stabile al 100%
+            detector.detect(canvas)
+                .then(barcodes => {
+                    if (barcodes.length > 0) {
+                        const codiceLetto = barcodes[0].rawValue;
+                        gestisciCodiceRilevato(codiceLetto);
+                    } else {
+                        resultElement.innerText = "❌ Codice non trovato nella foto.";
+                        alert("Codice a barre non rilevato. Tieni la fotocamera ben ferma, centrata e riprova con più luce.");
+                    }
+                })
+                .catch(err => {
+                    console.error("Errore lettura Canvas:", err);
+                    resultElement.innerText = "❌ Errore durante l'analisi.";
+                });
+        };
     };
+    reader.readAsDataURL(file);
 }
 
 // --- GESTIONE DEL CODICE LETTO ---
@@ -73,7 +83,7 @@ function gestisciCodiceRilevato(decodedText) {
             alert(`${prodottoNome} è già presente nel frigorifero.`);
         }
     } else {
-        alert(`🔍 Codice rilevato: ${decodedText}\nQuesto prodotto non è registrato nel tuo database. Puoi aggiungerlo manualmente.`);
+        alert(`🔍 Codice rilevato: ${decodedText}\nProdotto non registrato. Puoi aggiungerlo manuale.`);
     }
 }
 

@@ -11,19 +11,19 @@
     <div class="container">
         <h1>🍏 Il Mio Frigo Smart</h1>
 
-        <!-- SEZIONE SCANNER LOCALE NATIVO -->
+        <!-- SEZIONE SCANNER CON CANVAS -->
         <div class="scanner-section">
             <h2>📷 Scanner Codici a Barre</h2>
             <div class="btn-group" style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
                 <button class="action-btn" style="background-color: #28a745; width: 100%; max-width: 300px; font-size: 16px; padding: 12px;" onclick="document.getElementById('file-input').click()">📸 Scatta Foto al Codice</button>
             </div>
 
-            <!-- Input per scattare la foto -->
-            <input type="file" id="file-input" accept="image/*" capture="environment" style="display: none;" onchange="scansionaFotoLocale(event)">
+            <!-- Input per lo scatto fotografico -->
+            <input type="file" id="file-input" accept="image/*" capture="environment" style="display: none;" onchange="elaboraScattoConCanvas(event)">
             
             <div id="reader" style="width: 100%; max-width: 400px; min-height: 200px; margin: 15px auto; background-color: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px dashed #ccc;">
-                <img id="image-preview" style="width: 100%; height: auto; display: none; border-radius: 8px;" />
-                <p id="placeholder-text" style="color: #666; font-size: 14px; padding: 10px; text-align: center;">Scatta una foto nitida e orizzontale al codice a barre del prodotto</p>
+                <!-- Usiamo l'immagine visibile fin da subito per evitare conflitti con i browser -->
+                <img id="image-preview" style="width: 100%; height: auto; border-radius: 8px;" src="data:image/svg+xml;utf8,<svg xmlns='http://w3.org' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f0f0'/></svg>" />
             </div>
             
             <p id="scan-result" style="font-weight: bold; margin-top: 10px; color: #333; text-align: center;">Stato: In attesa dello scatto...</p>
@@ -33,9 +33,8 @@
         <div class="manual-section">
             <h2>✍️ Aggiungi Prodotto Manualmente</h2>
             <div class="input-group">
-                <button class="action-btn" style="background-color: #28a745; width: 100%; max-width: 300px; font-size: 16px; padding: 12px;" onclick="document.getElementById('file-input').click()">📸 Scatta Foto al Codice</button>
-
-<input type="file" id="file-input" accept="image/*" capture="environment" style="display: none;" onchange="scansionaFotoLocale(event)">
+                <input type="text" id="manual-input" placeholder="Es. Latte, Uova, Mela...">
+                <button class="add-btn" onclick="aggiungiManuale()">Aggiungi</button>
             </div>
         </div>
 

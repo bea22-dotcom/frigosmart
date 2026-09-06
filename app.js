@@ -13,22 +13,31 @@ const DATABASE_PRODOTTI = {
     "8000570005113": "Nutella Biscuits"
 };
 
-// --- FUNZIONE PER AVVIARE LA FOTOCAMERA ---
+// --- FUNZIONE PER AVVIARE LA FOTOCAMERA OTTIMIZZATA PER CODICI A BARRE ---
 function avviaScanner() {
     // Inizializza la libreria sul div con id="reader"
     html5Qrcode = new Html5Qrcode("reader");
 
+    // Configurazione specifica per leggere i codici a barre dei prodotti (EAN)
+    const config = {
+        fps: 15, // Aumentiamo i fotogrammi per maggiore fluidità
+        qrbox: { width: 300, height: 150 }, // Area rettangolare adatta ai codici a barre
+        // ATTIVAZIONE FORMATI: Forziamo la lettura dei codici a barre commerciali
+        formatsToSupport: [ 
+            Html5QrcodeSupportedFormats.EAN_13, 
+            Html5QrcodeSupportedFormats.EAN_8, 
+            Html5QrcodeSupportedFormats.QR_CODE 
+        ]
+    };
+
     html5Qrcode.start(
         { facingMode: modalitaCam }, 
-        {
-            fps: 10,
-            qrbox: { width: 250, height: 250 }
-        },
+        config,
         (decodedText) => {
             // 1. Mostra il codice a barre rilevato nella pagina
             const resultElement = document.getElementById("scan-result");
             if (resultElement) {
-                resultElement.innerText = decodedText;
+                resultElement.innerText = "Codice letto: " + decodedText;
             }
 
             // 2. Cerca il prodotto nel database
@@ -49,7 +58,7 @@ function avviaScanner() {
             }
         },
         (errorMessage) => {
-            // Ignora gli errori di scansione continui per non intasare la console
+            // Ignora gli errori di scansione continui
         }
     ).catch((err) => {
         console.error("Impossibile avviare la fotocamera:", err);

@@ -1,10 +1,11 @@
-// Stato dell'inventario
-let inventarioFrigo = JSON.parse(localStorage.getItem('frigo')) || [];
+// --- STATO DELL'INVENTARIO ---
+let inventarioFrigo = JSON.parse(localStorage.getItem('Frigo')) || [];
 let listaSpesa = JSON.parse(localStorage.getItem('spesa')) || [];
 
-let html5QrCode;
+let html5Qrcode; // Gestore dello scanner
 let modalitaCam = "environment"; // Parte provando quella posteriore
 
+// --- DATABASE PRODOTTI ---
 const DATABASE_PRODOTTI = {
     "8001234567890": "Latte Parzialmente Scremato",
     "8009876543210": "Yogurt alla Fragola",
@@ -12,115 +13,136 @@ const DATABASE_PRODOTTI = {
     "8000570005113": "Nutella Biscuits"
 };
 
+// --- FUNZIONE PER AVVIARE LA FOTOCAMERA ---
+function avviaScanner() {
+    // Inizializza la libreria sul div con id="reader"
+    html5Qrcode = new Html5Qrcode("reader");
+
+    html5Qrcode.start(
+        { facingMode: modalitaCam }, 
+        {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+        },
+        (decodedText) => {
+            // 1. Mostra il codice a barre rilevato nella pagina
+            const resultElement = document.getElementById("scan-result");
+            if (resultElement) {
+                resultElement.innerText = decodedText;
+            }
+
+            // 2. Cerca il prodotto nel database
+            if (DATABASE_PRODOTTI[decodedText]) {
+                const prodottoNome = DATABASE_PRODOTTI[decodedText];
+                
+                // Evita duplicati nel frigo
+                if (!inventarioFrigo.includes(prodottoNome)) {
+                    inventarioFrigo.push(prodottoNome);
+                    localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
+                    renderizzaListe();
+                    alert(`Aggiunto al frigo: ${prodottoNome}`);
+                } else {
+                    alert(`${prodottoNome} è già presente nel frigorifero.`);
+                }
+            } else {
+                alert(`Codice sconosciuto: ${decodedText}. Puoi aggiungerlo manualmente.`);
+            }
+        },
+        (errorMessage) => {
+            // Ignora gli errori di scansione continui per non intasare la console
+        }
+    ).catch((err) => {
+        console.error("Impossibile avviare la fotocamera:", err);
+    });
+}
+
+// --- FUNZIONE PER GIRARE LA FOTOCAMERA ---
+// Scritta tutta minuscola per corrispondere esattamente al tuo index.html: onclick="cambiatelecamera()"
+function cambiatelecamera() {
+    if (html5Qrcode) {
+        html5Qrcode.stop().then(() => {
+            // Inverte la modalità tra "environment" (posteriore) e "user" (frontale)
+            modalitaCam = (modalitaCam === "environment") ? "user" : "environment";
+            // Riavvia lo scanner con la nuova configurazione
+            avviaScanner();
+        }).catch((err) => {
+            console.error("Errore nel fermare la fotocamera:", err);
+        });
+    }
+}
+
+// --- AGGIUNTA MANUALE ---
+function aggiungiManuale() {
+    const input = document.getElementById("manual-input");
+    const prodottoNome = input.value.trim();
+
+    if (prodottoNome) {
+        if (!inventarioFrigo.includes(prodottoNome)) {
+            inventarioFrigo.push(prodottoNome);
+            localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
+            renderizzaListe();
+            input.value = ""; // Svuota l'input
+        } else {
+            alert("Prodotto già presente nel frigorifero.");
+        }
+    }
+}
+
+// --- SEGNALA MANCANTE (SPOSTA IN LISTA SPESA) ---
+function segnalaMancante(prodottoNome) {
+    // Rimuove dal frigo
+    inventarioFrigo = inventarioFrigo.filter(p => p !== prodottoNome);
+    localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
+
+    // Aggiunge alla spesa se non presente
+    if (!listaSpesa.includes(prodottoNome)) {
+        listaSpesa.push(prodottoNome);
+        localStorage.setItem('spesa', JSON.stringify(listaSpesa));
+    }
+
+    renderizzaListe();
+}
+
+// --- COMPRATO (SPOSTA DA SPESA A FRIGO) ---
+function comprato(prodottoNome) {
+    // Rimuove dalla spesa
+    listaSpesa = listaSpesa.filter(p => p !== prodottoNome);
+    localStorage.setItem('spesa', JSON.stringify(listaSpesa));
+
+    // Riaggiunge al frigo
+    if (!inventarioFrigo.includes(prodottoNome)) {
+        inventarioFrigo.push(prodottoNome);
+        localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
+    }
+
+    renderizzaListe();
+}
+
+// --- RENDERIZZA LE LISTE NELL'INTERFACCIA ---
 function renderizzaListe() {
     const frigoUl = document.getElementById("frigo-list");
     const spesaUl = document.getElementById("spesa-list");
-    
+
     if (frigoUl) frigoUl.innerHTML = "";
     if (spesaUl) spesaUl.innerHTML = "";
 
+    // Mostra elementi nel Frigo
     inventarioFrigo.forEach(prod => {
-        let li = document.createElement("li");
-        li.innerHTML = `<span>🍏 ${prod}</span> <button onclick="segnalaMancante('${prod}')">Finito ❌</button>`;
+        const li = document.createElement("li");
+        li.innerHTML = `<span>🍏 ${prod}</span> <button class="action-btn" onclick="segnalaMancante('${prod}')">Mancante</button>`;
         if (frigoUl) frigoUl.appendChild(li);
     });
 
+    // Mostra elementi nella Lista Spesa
     listaSpesa.forEach(prod => {
-        let li = document.createElement("li");
-        li.innerHTML = `<span>🛒 ${prod}</span> <button class="action-btn" onclick="compraProdotto('${prod}')">Comprato ✔️</button>`;
+        const li = document.createElement("li");
+        li.innerHTML = `<span>🛒 ${prod}</span> <button class="action-btn" onclick="comprato('${prod}')">Comprato</button>`;
         if (spesaUl) spesaUl.appendChild(li);
     });
 }
 
-function salvaEAgiorna() {
-    localStorage.setItem('frigo', JSON.stringify(inventarioFrigo));
-    localStorage.setItem('spesa', JSON.stringify(listaSpesa));
+// --- AVVIO AUTOMATICO AL CARICAMENTO ---
+window.addEventListener("DOMContentLoaded", () => {
+    avviaScanner();
     renderizzaListe();
-}
-
-function aggiungiManuale() {
-    const input = document.getElementById("manual-input");
-    if (!input) return;
-    const nomeProdotto = input.value.trim();
-    
-    if (nomeProdotto !== "") {
-        if (!inventarioFrigo.includes(nomeProdotto)) {
-            inventarioFrigo.push(nomeProdotto);
-            salvaEAgiorna();
-        }
-        input.value = "";
-    }
-}
-
-function segnalaMancante(prodotto) {
-    if (!listaSpesa.includes(prodotto)) {
-        listaSpesa.push(prodotto);
-        inventarioFrigo = inventarioFrigo.filter(item => item !== prodotto);
-        salvaEAgiorna();
-    }
-}
-
-function compraProdotto(prodotto) {
-    if (!inventarioFrigo.includes(prodotto)) {
-        inventarioFrigo.push(prodotto);
-        listaSpesa = listaSpesa.filter(item => item !== prodotto);
-        salvaEAgiorna();
-    }
-}
-
-function onScanSuccess(decodedText, decodedResult) {
-    const resultText = document.getElementById("scan-result");
-    let nomeProdotto = DATABASE_PRODOTTI[decodedText] || `Prodotto Sconosciuto (${decodedText})`;
-    
-    resultText.innerText = `Scansionato: ${nomeProdotto}`;
-    segnalaMancante(nomeProdotto);
-    
-    if (navigator.vibrate) navigator.vibrate(200);
-}
-
-// Avvia lo scanner con la modalità corrente
-function avviaScanner() {
-    const resultText = document.getElementById("scan-result");
-    
-    if (!html5QrCode) {
-        html5QrCode = new Html5Qrcode("reader");
-    }
-
-    html5QrCode.start(
-        { facingMode: modalitaCam }, 
-        { fps: 10, qrbox: { width: 250, height: 150 } },
-        onScanSuccess
-    ).then(() => {
-        resultText.innerText = "Scanner attivo. Inquadra un codice a barre.";
-        resultText.style.color = "green";
-    }).catch(err => {
-        console.error(err);
-        resultText.innerText = "Errore di avvio. Prova a girare la fotocamera.";
-        resultText.style.color = "orange";
-    });
-}
-
-// Funzione legata al pulsante per forzare il cambio cam
-function cambiaTelecamera() {
-    const resultText = document.getElementById("scan-result");
-    resultText.innerText = "Cambio telecamera in corso...";
-    
-    if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-            // Inverte la modalità: se era posteriore diventa frontale e viceversa
-            modalitaCam = (modalitaCam === "environment") ? "user" : "environment";
-            avviaScanner();
-        }).catch(err => {
-            console.error("Errore stop cam:", err);
-            // Forza comunque il riavvio se era già spenta
-            modalitaCam = (modalitaCam === "environment") ? "user" : "environment";
-            avviaScanner();
-        });
-    } else {
-        avviaScanner();
-    }
-}
-
-// Avvio iniziale
-renderizzaListe();
-setTimeout(avviaScanner, 1000);
+});

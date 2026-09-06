@@ -142,7 +142,10 @@ function renderizzaListe() {
 }
 
 // --- AVVIO AUTOMATICO AL CARICAMENTO ---
+// CANCELLA O COMMENTA QUESTA RIGA in fondo al file:
+// window.addEventListener("DOMContentLoaded", avviaScanner);
+
+// Sostituiscila semplicemente con l'inizializzazione delle liste:
 window.addEventListener("DOMContentLoaded", () => {
-    avviaScanner();
     renderizzaListe();
 });

@@ -1,8 +1,18 @@
-// 1. STATO DELL'INVENTARIO (Salvato nel browser)
+// Stato dell'inventario preso dal LocalStorage
 let inventarioFrigo = JSON.parse(localStorage.getItem('frigo')) || [];
 let listaSpesa = JSON.parse(localStorage.getItem('spesa')) || [];
 
-// 2. FUNZIONE PER DISEGNARE LE LISTE SULLO SCHERMO
+let html5QrCode;
+let currentCameraId;
+
+// Database temporaneo per i test dei codici a barre
+const DATABASE_PRODOTTI = {
+    "8001234567890": "Latte Parzialmente Scremato",
+    "8009876543210": "Yogurt alla Fragola",
+    "8012345678901": "Uova BIO (x6)",
+    "8000570005113": "Nutella Biscuits" // Esempio codice reale
+};
+
 function renderizzaListe() {
     const frigoUl = document.getElementById("frigo-list");
     const spesaUl = document.getElementById("spesa-list");
@@ -23,14 +33,12 @@ function renderizzaListe() {
     });
 }
 
-// 3. SALVATAGGIO DEI DATI
 function salvaEAgiorna() {
     localStorage.setItem('frigo', JSON.stringify(inventarioFrigo));
     localStorage.setItem('spesa', JSON.stringify(listaSpesa));
     renderizzaListe();
 }
 
-// 4. FUNZIONE PER AGGIUNGERE I PRODOTTI A MANO
 function aggiungiManuale() {
     const input = document.getElementById("manual-input");
     if (!input) return;
@@ -41,11 +49,10 @@ function aggiungiManuale() {
             inventarioFrigo.push(nomeProdotto);
             salvaEAgiorna();
         }
-        input.value = ""; // Svuota il campo
+        input.value = "";
     }
 }
 
-// 5. FUNZIONE PER SPOSTARE I PRODOTTI NEI MANCANTI (Finito)
 function segnalaMancante(prodotto) {
     if (!listaSpesa.includes(prodotto)) {
         listaSpesa.push(prodotto);
@@ -54,7 +61,6 @@ function segnalaMancante(prodotto) {
     }
 }
 
-// 6. FUNZIONE PER RIMETTERE I PRODOTTI NEL FRIGO (Comprato)
 function compraProdotto(prodotto) {
     if (!inventarioFrigo.includes(prodotto)) {
         inventarioFrigo.push(prodotto);
@@ -63,30 +69,72 @@ function compraProdotto(prodotto) {
     }
 }
 
-// 7. AVVIO DELLA TELECAMERA
-async function avviaTelecamera() {
-    const video = document.getElementById('webcam');
-    const resultText = document.getElementById('scan-result');
+// Inizializzazione e gestione delle telecamere
+function onScanSuccess(decodedText, decodedResult) {
+    const resultText = document.getElementById("scan-result");
+    let nomeProdotto = DATABASE_PRODOTTI[decodedText] || `Prodotto Sconosciuto (${decodedText})`;
     
-    if (!video || !resultText) return;
+    resultText.innerText = `Scansionato: ${nomeProdotto}`;
+    segnalaMancante(nomeProdotto);
     
-    try {
-       // NUOVO CODICE CON ROTAZIONE SULLA TELECAMERA POSTERIORE
-const stream = await navigator.mediaDevices.getUserMedia({ 
-    video: { 
-        facingMode: "environment" 
-    } 
-});
-        video.srcObject = stream;
-        resultText.innerText = "Fotocamera attiva! Usa il pulsante sopra o inquadra i codici.";
-        resultText.style.color = "green";
-    } catch (err) {
-        console.error("Errore cam:", err);
-        resultText.innerText = "Impossibile avviare la telecamera. Controlla i permessi o usa l'inserimento manuale.";
-        resultText.style.color = "red";
-    }
+    if (navigator.vibrate) navigator.vibrate(200); // Vibrazione di conferma
 }
 
-// 8. ESECUZIONE ALL'APERTURA DELLA PAGINA
+async function avviaScanner() {
+    const resultText = document.getElementById("scan-result");
+    const cameraSelect = document.getElementById("camera-select");
+    
+    html5QrCode = new Html5Qrcode("reader");
+
+    Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length > 0) {
+            cameraSelect.innerHTML = "";
+            
+            // Popola il menu a tendina con le telecamere trovate
+            devices.forEach((device, index) => {
+                let option = document.createElement("option");
+                option.value = device.id;
+                option.text = device.label || `Telecamera ${index + 1}`;
+                cameraSelect.appendChild(option);
+            });
+
+            // Seleziona preferibilmente la cam posteriore (back/environment)
+            let backCamera = devices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('posteriore'));
+            currentCameraId = backCamera ? backCamera.id : devices[0].id;
+            cameraSelect.value = currentCameraId;
+
+            startCamera(currentCameraId);
+
+            // Cambia telecamera quando l'utente la seleziona dal menu
+            cameraSelect.addEventListener('change', (e) => {
+                html5QrCode.stop().then(() => {
+                    startCamera(e.target.value);
+                }).catch(err => console.error(err));
+            });
+
+        } else {
+            resultText.innerText = "Nessuna telecamera rilevata.";
+        }
+    }).catch(err => {
+        console.error(err);
+        resultText.innerText = "Errore permessi fotocamera.";
+    });
+}
+
+function startCamera(cameraId) {
+    const resultText = document.getElementById("scan-result");
+    html5QrCode.start(
+        cameraId, 
+        { fps: 10, qrbox: { width: 250, height: 150 } }, // Ottimizzato rettangolare per codici a barre
+        onScanSuccess
+    ).then(() => {
+        resultText.innerText = "Scanner attivo. Inquadra un codice a barre.";
+    }).catch(err => {
+        resultText.innerText = "Impossibile avviare questa telecamera.";
+    });
+}
+
+// Avvia l'app
 renderizzaListe();
-avviaTelecamera();
+// Ritardo controllato per evitare conflitti di caricamento su GitHub Pages
+setTimeout(avviaScanner, 500);

@@ -1,10 +1,12 @@
-<!DOCTYPE html>
+<!<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frigo Smart</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Carica la libreria ufficiale dello scanner -->
+    <script src="https://unpkg.com" type="text/javascript"></script>
 </head>
 <body>
     <div class="container">
@@ -14,21 +16,21 @@
         <div class="manual-section">
             <h2>➕ Aggiungi Prodotto a Mano</h2>
             <div class="input-group">
-                <input type="text" id="manual-input" placeholder="Es. Latte, Uova, Mele...">
+                <input type="text" id="manual-input" placeholder="Es. Latte, Uova...">
                 <button class="action-btn" onclick="aggiungiManuale()">Aggiungi</button>
             </div>
         </div>
 
-        <!-- Sezione Scanner Nativo -->
+        <!-- Sezione Scanner Aggiornata -->
         <div class="scanner-section">
-            <h2>📷 Fotocamera / Scanner</h2>
-            <div class="video-container">
-                <video id="webcam" autoplay playsinline></video>
-            </div>
-            <p id="scan-result">In attesa della telecamera...</p>
+            <h2>📷 Scanner Codici a Barre</h2>
+            <!-- Menu per cambiare telecamera -->
+            <select id="camera-select" style="margin-bottom: 15px; padding: 8px; border-radius: 6px; width: 80%; font-size: 16px;"></select>
+            <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto; border-radius: 8px; overflow: hidden;"></div>
+            <p id="scan-result" style="font-weight: bold; color: #27ae60; margin-top: 10px;">In attesa della telecamera...</p>
         </div>
 
-        <!-- Sezione Inventario e Spesa -->
+        <!-- Sezione Liste -->
         <div class="lists-container">
             <div class="list-box">
                 <h2>🍏 Nel Frigorifero</h2>
@@ -42,7 +44,6 @@
         </div>
     </div>
 
-    <!-- Il file JavaScript viene caricato alla fine in modo sicuro -->
     <script src="app.js"></script>
 </body>
 </html>

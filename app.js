@@ -10,49 +10,48 @@ const DATABASE_PRODOTTI = {
     "8000570005113": "Nutella Biscuits"
 };
 
-// --- SCANSIONE DA FOTO CON API NATIVA DEL BROWSER ---
-async function scansionaDaFoto(event) {
+// --- SCANSIONE TRAMITE MOTORE DI DECODIFICA API CLOUD ---
+function scansionaConCloud(event) {
     const file = event.target.files[0];
     if (!file) return;
-
-    // Controlla se il browser supporta il rilevatore nativo
-    if (!('BarcodeDetector' in window)) {
-        alert("Il browser dello smartphone non supporta l'analisi nativa. Assicurati di usare Google Chrome aggiornato.");
-        return;
-    }
 
     const resultElement = document.getElementById("scan-result");
     const previewImg = document.getElementById("image-preview");
     const placeholder = document.getElementById("placeholder-text");
 
-    resultElement.innerText = "Analisi della foto in corso...";
+    resultElement.innerText = "⚡ Invio al motore di lettura in corso...";
 
-    // Mostra l'anteprima dell'immagine scattata nel riquadro
-    const urlImmagine = URL.createObjectURL(file);
-    previewImg.src = urlImmagine;
+    // Mostra l'anteprima locale della foto
+    previewImg.src = URL.createObjectURL(file);
     previewImg.style.display = "block";
     if (placeholder) placeholder.style.display = "none";
 
-    try {
-        // Inizializza il rilevatore del browser per codici a barre commerciali (EAN)
-        const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code'] });
-        
-        // Aspetta che l'immagine sia caricata in memoria per analizzarla
-        previewImg.onload = async () => {
-            const barcodes = await detector.detect(previewImg);
-            
-            if (barcodes.length > 0) {
-                const decodedText = barcodes[0].rawValue;
-                gestisciCodiceRilevato(decodedText);
-            } else {
-                resultElement.innerText = "Scansione fallita.";
-                alert("Nessun codice a barre rilevato. Metti a fuoco il codice, evita riflessi di luce e riprova.");
-            }
-        };
-    } catch (err) {
-        console.error("Errore durante la decodifica nativa:", err);
-        resultElement.innerText = "Errore durante l'analisi.";
-    }
+    // Prepariamo la foto per inviarla tramite chiamata HTTP POST
+    const formData = new FormData();
+    formData.append("file", file);
+
+    // Inviamo la foto al server di decodifica gratuito e sicuro di GoQR
+    fetch("https://qrserver.com", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Il server risponde con un array di risultati
+        if (data && data[0] && data[0].symbol && data[0].symbol[0] && data[0].symbol[0].data) {
+            const decodedText = data[0].symbol[0].data;
+            gestisciCodiceRilevato(decodedText);
+        } else {
+            // Se il server non trova codici nell'immagine
+            resultElement.innerText = "❌ Codice non trovato nella foto.";
+            alert("Il motore non ha trovato codici a barre. Scatta la foto più da vicino, assicurati che non sia mossa e che ci sia buona luce.");
+        }
+    })
+    .catch(err => {
+        console.error("Errore di connessione API:", err);
+        resultElement.innerText = "❌ Errore di connessione.";
+        alert("Impossibile contattare il server di lettura. Controlla la tua connessione internet.");
+    });
 }
 
 // --- GESTIONE DEL CODICE LETTO ---
@@ -66,16 +65,16 @@ function gestisciCodiceRilevato(decodedText) {
             inventarioFrigo.push(prodottoNome);
             localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
             renderizzaListe();
-            alert(`Aggiunto al frigo: ${prodottoNome}`);
+            alert(`🎉 Aggiunto al frigo: ${prodottoNome}`);
         } else {
             alert(`${prodottoNome} è già presente nel frigorifero.`);
         }
     } else {
-        alert(`Codice letto: ${decodedText}\nProdotto non registrato. Puoi aggiungerlo a mano.`);
+        alert(`🔍 Codice rilevato: ${decodedText}\nQuesto prodotto non è nel tuo database. Puoi aggiungerlo manualmente.`);
     }
 }
 
-// --- FUNZIONI DI GESTIONE INTERFACCIA ---
+// --- FUNZIONI DI GESTIONE DELLE LISTE INTERNE ---
 function aggiungiManuale() {
     const input = document.getElementById("manual-input");
     const prodottoNome = input.value.trim();

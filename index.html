@@ -11,24 +11,24 @@
     <div class="container">
         <h1>🍏 Il Mio Frigo Smart</h1>
 
-        <!-- SEZIONE SCANNER NATIVO -->
+        <!-- SEZIONE SCANNER CLOUD INFALLIBILE -->
         <div class="scanner-section">
             <h2>📷 Scanner Codici a Barre</h2>
             <div class="btn-group" style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
-                <!-- Pulsante per scattare una foto nitida -->
-                <button class="action-btn" style="background-color: #28a745; width: 100%; max-width: 300px;" onclick="document.getElementById('file-input').click()">📸 Scatta Foto al Codice</button>
+                <!-- Questo pulsante apre la fotocamera ad alta risoluzione del tuo telefono -->
+                <button class="action-btn" style="background-color: #28a745; width: 100%; max-width: 300px; font-size: 16px; padding: 12px;" onclick="document.getElementById('file-input').click()">📸 Scatta Foto al Codice</button>
             </div>
 
-            <!-- Input nascosto che apre la fotocamera di sistema -->
-            <input type="file" id="file-input" accept="image/*" capture="environment" style="display: none;" onchange="scansionaDaFoto(event)">
+            <!-- Input nascosto per scattare la foto -->
+            <input type="file" id="file-input" accept="image/*" capture="environment" style="display: none;" onchange="scansionaConCloud(event)">
             
-            <!-- Riquadro anteprima immagine caricata -->
-            <div id="reader" style="width: 100%; max-width: 400px; min-height: 200px; margin: 15px auto; background-color: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+            <!-- Riquadro anteprima dell'immagine -->
+            <div id="reader" style="width: 100%; max-width: 400px; min-height: 200px; margin: 15px auto; background-color: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px dashed #ccc;">
                 <img id="image-preview" style="width: 100%; height: auto; display: none; border-radius: 8px;" />
-                <p id="placeholder-text" style="color: #666; font-size: 14px; padding: 10px; text-align: center;">Fai clic su "Scatta Foto" per scansionare un prodotto</p>
+                <p id="placeholder-text" style="color: #666; font-size: 14px; padding: 10px; text-align: center;">Scatta una foto nitida e ravvicinata del codice a barre</p>
             </div>
             
-            <p id="scan-result" style="font-weight: bold; margin-top: 10px; color: #333; text-align: center;">In attesa dello scatto...</p>
+            <p id="scan-result" style="font-weight: bold; margin-top: 10px; color: #333; text-align: center;">Stato: In attesa dello scatto...</p>
         </div>
 
         <!-- AGGIUNTA MANUALE -->

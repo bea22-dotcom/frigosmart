@@ -5,26 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frigo Smart</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Libreria di scansione universale compatibile con iOS/Safari -->
+    <script type="text/javascript" src="https://unpkg.com"></script>
 </head>
 <body>
 
     <div class="container">
         <h1>🍏 Il Mio Frigo Smart</h1>
 
-        <!-- SEZIONE FOTOCAMERA COMPATIBILE SAFARI -->
+        <!-- SEZIONE SCANNER ZXING PER SAFARI -->
         <div class="scanner-section">
-            <h2>📷 Gestione Fotocamera</h2>
+            <h2>📷 Scanner Codici a Barre</h2>
             <div class="btn-group">
-                <button class="action-btn" onclick="avviaFotocamera()">🔋 Accendi Fotocamera</button>
+                <button class="action-btn" onclick="avviaScanner()">🔋 Accendi Fotocamera</button>
                 <button class="action-btn" onclick="cambiaTelecamera()">🔄 Gira Fotocamera</button>
             </div>
             
-            <!-- Aggiunto MUTED e rimosso il display:none che bloccava iOS -->
             <div id="reader" style="width: 100%; max-width: 400px; min-height: 200px; margin: 15px auto; background-color: #000; border-radius: 8px; overflow: hidden;">
-                <video id="video-stream" autoplay playsinline muted style="width: 100%; height: auto; display: block; background: #000;"></video>
+                <!-- Tag video con i vincoli obbligatori di Apple -->
+                <video id="video-stream" autoplay playsinline muted style="width: 100%; height: auto; background: #000;"></video>
             </div>
             
-            <p id="scan-result" style="font-weight: bold; margin-top: 10px; color: #333;">In attesa della fotocamera...</p>
+            <p id="scan-result" style="font-weight: bold; margin-top: 10px; color: #333;">In attesa della telecamera...</p>
         </div>
 
         <!-- AGGIUNTA MANUALE -->

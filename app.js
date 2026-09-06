@@ -2,9 +2,8 @@
 let inventarioFrigo = JSON.parse(localStorage.getItem('Frigo')) || [];
 let listaSpesa = JSON.parse(localStorage.getItem('spesa')) || [];
 
-let codeReader = null;
-let streamCorrente = null;
-let modalitaCam = "environment"; 
+let codeReader = new ZXing.BrowserMultiFormatReader();
+let modalitaCam = "environment"; // "environment" forza la telecamera posteriore
 
 // --- DATABASE PRODOTTI ---
 const DATABASE_PRODOTTI = {
@@ -14,74 +13,40 @@ const DATABASE_PRODOTTI = {
     "8000570005113": "Nutella Biscuits"
 };
 
-// --- CONFIGURAZIONE AVANZATA SCANNER SAFARI/CHROME ---
+// --- AVVIA SCANNER AUTOMATICO (METODO GUIDATO ZXING) ---
 function avviaScanner() {
-    if (streamCorrente) {
-        streamCorrente.getTracks().forEach(track => track.stop());
-    }
-    if (codeReader) {
-        codeReader.reset();
-    }
+    document.getElementById("scan-result").innerText = "Inizializzazione fotocamera...";
 
-    const video = document.getElementById("video-stream");
+    // Resetta lo scanner se era già avviato
+    codeReader.reset();
 
-    // Chiediamo una risoluzione maggiore e forziamo la messa a fuoco continua
-    const vincoliHardware= {
+    // Definiamo i vincoli della fotocamera (posteriore e con risoluzione ideale)
+    const vincoli = {
         video: { 
             facingMode: modalitaCam,
             width: { ideal: 1280 },
-            height: { ideal: 720 },
-            advanced: [{ focusMode: "continuous" }] // Forza l'autofocus continuo dello smartphone
-        },
-        audio: false
+            height: { ideal: 720 }
+        }
     };
 
-    navigator.mediaDevices.getUserMedia(vincoliHardware)
-        .then((stream) => {
-            streamCorrente = stream;
-            video.srcObject = stream;
-            
-            video.onplaying = () => {
-                document.getElementById("scan-result").innerText = "Scanner attivo! Inquadra il codice a barre.";
-                attivaMotoreDecodifica();
-            };
-        })
-        .catch((err) => {
-            console.error("Errore fotocamera:", err);
-            alert("Impossibile accedere alla fotocamera. Controlla i permessi.");
-        });
-}
-
-function attivaMotoreDecodifica() {
-    // Configura ZXing dicendogli ESPLICITAMENTE di cercare solo codici a barre (EAN)
-    const formatiScansione = new Map();
-    const formatiSupportati = [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8];
-    formatiScansione.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formatiSupportati);
-    
-    // Tentativo di lettura più aggressivo per immagini sfocate
-    formatiScansione.set(ZXing.DecodeHintType.TRY_HARDER, true);
-
-    codeReader = new ZXing.BrowserMultiFormatReader(formatiScansione);
-    
-    // Avvia la decodifica continua
-    codeReader.decodeFromVideoElement('video-stream', (result, err) => {
+    // ZXing fa tutto da solo: apre il video, lo aggancia all'HTML e scansiona continuamente
+    codeReader.decodeFromConstraints(vincoli, 'video-stream', (result, err) => {
         if (result) {
-            // Se legge il codice, fermiamo un secondo il lettore per evitare alert infiniti
-            codeReader.reset();
+            // Codice rilevato con successo!
             gestisciCodiceRilevato(result.text);
-            
-            // Fai ripartire lo scanner dopo 2 secondi
-            setTimeout(avviaScanner, 2000);
+        }
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+            // Logga solo errori critici veri, ignorando i fotogrammi vuoti
+            console.error(err);
         }
     });
+
+    document.getElementById("scan-result").innerText = "Scanner attivo! Inquadra un codice a barre.";
 }
 
+// --- GESTIONE DEL CODICE LETTO ---
 function gestisciCodiceRilevato(decodedText) {
-    // Blocco per evitare letture duplicate ravvicinate
-    const resultElement = document.getElementById("scan-result");
-    if (resultElement) {
-        resultElement.innerText = "Codice letto: " + decodedText;
-    }
+    document.getElementById("scan-result").innerText = "Codice letto: " + decodedText;
 
     if (DATABASE_PRODOTTI[decodedText]) {
         const prodottoNome = DATABASE_PRODOTTI[decodedText];
@@ -93,7 +58,7 @@ function gestisciCodiceRilevato(decodedText) {
             alert(`Aggiunto al frigo: ${prodottoNome}`);
         }
     } else {
-        alert(`Codice letto: ${decodedText}\nProdotto non a database.`);
+        alert(`Codice letto: ${decodedText}\nProdotto non presente nel database.`);
     }
 }
 

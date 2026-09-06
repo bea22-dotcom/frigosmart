@@ -2,9 +2,6 @@
 let inventarioFrigo = JSON.parse(localStorage.getItem('Frigo')) || [];
 let listaSpesa = JSON.parse(localStorage.getItem('spesa')) || [];
 
-let codeReader = new ZXing.BrowserMultiFormatReader();
-let modalitaCam = "environment"; 
-
 // --- DATABASE PRODOTTI ---
 const DATABASE_PRODOTTI = {
     "8001234567890": "Latte Parzialmente Scremato",
@@ -13,49 +10,49 @@ const DATABASE_PRODOTTI = {
     "8000570005113": "Nutella Biscuits"
 };
 
-// --- METODO 1: SCANSIONE DA FOTO SCATTATA (MESSA A FUOCO PERFETTA) ---
-function scansionaDaFoto(event) {
+// --- SCANSIONE DA FOTO CON API NATIVA DEL BROWSER ---
+async function scansionaDaFoto(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    document.getElementById("scan-result").innerText = "Analisi della foto in corso...";
+    // Controlla se il browser supporta il rilevatore nativo
+    if (!('BarcodeDetector' in window)) {
+        alert("Il browser dello smartphone non supporta l'analisi nativa. Assicurati di usare Google Chrome aggiornato.");
+        return;
+    }
 
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        const img = new Image();
-        img.src = e.target.result;
-        img.onload = function () {
-            // ZXing analizza l'immagine statica ad alta risoluzione
-            codeReader.decodeFromImageElement(img)
-                .then((result) => {
-                    gestisciCodiceRilevato(result.text);
-                })
-                .catch((err) => {
-                    console.error(err);
-                    alert("Impossibile rilevare il codice a barre da questa foto. Assicurati che l'immagine sia ben illuminata, vicina e non mossa.");
-                    document.getElementById("scan-result").innerText = "Scansione fallita. Riprova.";
-                });
+    const resultElement = document.getElementById("scan-result");
+    const previewImg = document.getElementById("image-preview");
+    const placeholder = document.getElementById("placeholder-text");
+
+    resultElement.innerText = "Analisi della foto in corso...";
+
+    // Mostra l'anteprima dell'immagine scattata nel riquadro
+    const urlImmagine = URL.createObjectURL(file);
+    previewImg.src = urlImmagine;
+    previewImg.style.display = "block";
+    if (placeholder) placeholder.style.display = "none";
+
+    try {
+        // Inizializza il rilevatore del browser per codici a barre commerciali (EAN)
+        const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code'] });
+        
+        // Aspetta che l'immagine sia caricata in memoria per analizzarla
+        previewImg.onload = async () => {
+            const barcodes = await detector.detect(previewImg);
+            
+            if (barcodes.length > 0) {
+                const decodedText = barcodes[0].rawValue;
+                gestisciCodiceRilevato(decodedText);
+            } else {
+                resultElement.innerText = "Scansione fallita.";
+                alert("Nessun codice a barre rilevato. Metti a fuoco il codice, evita riflessi di luce e riprova.");
+            }
         };
-    };
-    reader.readAsDataURL(file);
-}
-
-// --- METODO 2: STREAMING LIVE STANDARD ---
-function avviaScanner() {
-    document.getElementById("scan-result").innerText = "Inizializzazione streaming...";
-    codeReader.reset();
-
-    const vincoli = {
-        video: { facingMode: modalitaCam, width: { ideal: 1280 }, height: { ideal: 720 } }
-    };
-
-    codeReader.decodeFromConstraints(vincoli, 'video-stream', (result, err) => {
-        if (result) {
-            gestisciCodiceRilevato(result.text);
-        }
-    });
-
-    document.getElementById("scan-result").innerText = "Streaming attivo. Inquadra il codice.";
+    } catch (err) {
+        console.error("Errore durante la decodifica nativa:", err);
+        resultElement.innerText = "Errore durante l'analisi.";
+    }
 }
 
 // --- GESTIONE DEL CODICE LETTO ---
@@ -71,19 +68,14 @@ function gestisciCodiceRilevato(decodedText) {
             renderizzaListe();
             alert(`Aggiunto al frigo: ${prodottoNome}`);
         } else {
-            alert(`${prodottoNome} è già presente.`);
+            alert(`${prodottoNome} è già presente nel frigorifero.`);
         }
     } else {
-        alert(`Codice letto: ${decodedText}\nProdotto non a database. Puoi inserirlo a mano.`);
+        alert(`Codice letto: ${decodedText}\nProdotto non registrato. Puoi aggiungerlo a mano.`);
     }
 }
 
-// --- ALTRE FUNZIONI GESTIONE LISTE ---
-function cambiaTelecamera() {
-    modalitaCam = (modalitaCam === "environment") ? "user" : "environment";
-    avviaScanner();
-}
-
+// --- FUNZIONI DI GESTIONE INTERFACCIA ---
 function aggiungiManuale() {
     const input = document.getElementById("manual-input");
     const prodottoNome = input.value.trim();
@@ -107,7 +99,6 @@ function segnalaMancante(prodottoNome) {
     renderizzaListe();
 }
 
-// --- COMPRATO ---
 function comprato(prodottoNome) {
     listaSpesa = listaSpesa.filter(p => p !== prodottoNome);
     localStorage.setItem('spesa', JSON.stringify(listaSpesa));

@@ -2,16 +2,16 @@
 let inventarioFrigo = JSON.parse(localStorage.getItem('Frigo')) || [];
 let listaSpesa = JSON.parse(localStorage.getItem('spesa')) || [];
 
-// --- DATABASE PRODOTTI ---
-const DATABASE_PRODOTTI = {
+// Database locale di backup (se il prodotto non è presente online)
+const DATABASE_PRODOTTI_LOCALE = {
     "8001234567890": "Latte Parzialmente Scremato",
     "8009876543210": "Yogurt alla Fragola",
     "8012345678901": "Uova BIO (x6)",
     "8000570005113": "Nutella Biscuits"
 };
 
-// --- SCANSIONE TRAMITE MOTORE DI DECODIFICA API CLOUD ---
-function scansionaConCloud(event) {
+// --- SCANSIONE E RICERCA PRODOTTO TRAMITE OPEN FOOD FACTS ---
+function scansionaProdottoAlimentare(event) {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -19,62 +19,65 @@ function scansionaConCloud(event) {
     const previewImg = document.getElementById("image-preview");
     const placeholder = document.getElementById("placeholder-text");
 
-    resultElement.innerText = "⚡ Invio al motore di lettura in corso...";
+    resultElement.innerText = "⚡ Lettura e ricerca del prodotto nel database...";
 
-    // Mostra l'anteprima locale della foto
+    // Mostra l'anteprima locale della foto scattata
     previewImg.src = URL.createObjectURL(file);
     previewImg.style.display = "block";
     if (placeholder) placeholder.style.display = "none";
 
-    // Prepariamo la foto per inviarla tramite chiamata HTTP POST
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("user_image", file);
 
-    // Inviamo la foto al server di decodifica gratuito e sicuro di GoQR
-    fetch("https://qrserver.com", {
+    // Inviamo l'immagine direttamente al server di riconoscimento alimenti mondiale
+    fetch("https://openfoodfacts.org", {
         method: "POST",
         body: formData
     })
     .then(response => response.json())
     .then(data => {
-        // Il server risponde con un array di risultati
-        if (data && data[0] && data[0].symbol && data[0].symbol[0] && data[0].symbol[0].data) {
-            const decodedText = data[0].symbol[0].data;
-            gestisciCodiceRilevato(decodedText);
+        // Controlliamo se l'API ha riconosciuto il codice a barre
+        if (data && data.code) {
+            const codiceLetto = data.code;
+            let nomeProdotto = "Prodotto Sconosciuto";
+
+            // Se il prodotto esiste nel database mondiale Open Food Facts, prendiamo il nome vero
+            if (data.product && data.product.product_name) {
+                nomeProdotto = data.product.product_name;
+            } 
+            // Altrimenti controlliamo se lo hai registrato nel tuo database locale
+            else if (DATABASE_PRODOTTI_LOCALE[codiceLetto]) {
+                nomeProdotto = DATABASE_PRODOTTI_LOCALE[codiceLetto];
+            }
+
+            gestisciProdottoTrovato(codiceLetto, nomeProdotto);
         } else {
-            // Se il server non trova codici nell'immagine
-            resultElement.innerText = "❌ Codice non trovato nella foto.";
-            alert("Il motore non ha trovato codici a barre. Scatta la foto più da vicino, assicurati che non sia mossa e che ci sia buona luce.");
+            resultElement.innerText = "❌ Codice a barre non rilevato.";
+            alert("Il motore non è riuscito a leggere le linee del codice. Riprova tenendo il pacchetto dritto e ben illuminato.");
         }
     })
     .catch(err => {
-        console.error("Errore di connessione API:", err);
-        resultElement.innerText = "❌ Errore di connessione.";
-        alert("Impossibile contattare il server di lettura. Controlla la tua connessione internet.");
+        console.error("Errore di rete:", err);
+        resultElement.innerText = "❌ Errore durante l'analisi.";
+        alert("Si è verificato un problema di connessione. Controlla internet.");
     });
 }
 
-// --- GESTIONE DEL CODICE LETTO ---
-function gestisciCodiceRilevato(decodedText) {
-    document.getElementById("scan-result").innerText = "Codice letto: " + decodedText;
+// --- INSERIMENTO DEL PRODOTTO NEL FRIGO ---
+function gestisciProdottoTrovato(codice, nomeProdotto) {
+    document.getElementById("scan-result").innerText = `Letto: ${nomeProdotto} (${codice})`;
 
-    if (DATABASE_PRODOTTI[decodedText]) {
-        const prodottoNome = DATABASE_PRODOTTI[decodedText];
-        
-        if (!inventarioFrigo.includes(prodottoNome)) {
-            inventarioFrigo.push(prodottoNome);
-            localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
-            renderizzaListe();
-            alert(`🎉 Aggiunto al frigo: ${prodottoNome}`);
-        } else {
-            alert(`${prodottoNome} è già presente nel frigorifero.`);
-        }
+    if (!inventarioFrigo.includes(nomeProdotto)) {
+        inventarioFrigo.push(nomeProdotto);
+        localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
+        renderizzaListe();
+        alert(`🎉 Inserito nel frigo: ${nomeProdotto}`);
     } else {
-        alert(`🔍 Codice rilevato: ${decodedText}\nQuesto prodotto non è nel tuo database. Puoi aggiungerlo manualmente.`);
+        alert(`${nomeProdotto} si trova già nel frigorifero.`);
     }
 }
 
-// --- FUNZIONI DI GESTIONE DELLE LISTE INTERNE ---
+// --- GESTIONE DELLE LISTE ---
 function aggiungiManuale() {
     const input = document.getElementById("manual-input");
     const prodottoNome = input.value.trim();

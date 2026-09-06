@@ -13,55 +13,57 @@ const DATABASE_PRODOTTI = {
     "8000570005113": "Nutella Biscuits"
 };
 
-// --- FUNZIONE PER AVVIARE LA FOTOCAMERA OTTIMIZZATA PER CODICI A BARRE ---
+// --- FUNZIONE PER AVVIARE LA FOTOCAMERA CORRETTA PER CODICI A BARRE ---
 function avviaScanner() {
-    // Inizializza la libreria sul div con id="reader"
-    html5Qrcode = new Html5Qrcode("reader");
-
-    // Configurazione specifica per leggere i codici a barre dei prodotti (EAN)
-    const config = {
-        fps: 15, // Aumentiamo i fotogrammi per maggiore fluidità
-        qrbox: { width: 300, height: 150 }, // Area rettangolare adatta ai codici a barre
-        // ATTIVAZIONE FORMATI: Forziamo la lettura dei codici a barre commerciali
+    // ABILITAZIONE FORMATI: Diciamo subito alla libreria di attivare la lettura dei codici a barre (EAN)
+    html5Qrcode = new Html5Qrcode("reader", { 
         formatsToSupport: [ 
             Html5QrcodeSupportedFormats.EAN_13, 
-            Html5QrcodeSupportedFormats.EAN_8, 
+            Html5QrcodeSupportedFormats.EAN_8,
             Html5QrcodeSupportedFormats.QR_CODE 
-        ]
+        ] 
+    });
+
+    // Configurazione del rettangolo per i codici a barre
+    const config = {
+        fps: 15, // Più fotogrammi per secondo velocizzano la cattura
+        qrbox: { width: 320, height: 160 }, // Area rettangolare adatta alla forma dei codici a barre
+        experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true // Sfrutta l'accelerazione hardware del telefono se disponibile
+        }
     };
 
     html5Qrcode.start(
         { facingMode: modalitaCam }, 
         config,
         (decodedText) => {
-            // 1. Mostra il codice a barre rilevato nella pagina
+            // Riceve il codice a barre letto
             const resultElement = document.getElementById("scan-result");
             if (resultElement) {
-                resultElement.innerText = "Codice letto: " + decodedText;
+                resultElement.innerText = "Codice: " + decodedText;
             }
 
-            // 2. Cerca il prodotto nel database
+            // Cerca il codice nel database dei prodotti
             if (DATABASE_PRODOTTI[decodedText]) {
                 const prodottoNome = DATABASE_PRODOTTI[decodedText];
                 
-                // Evita duplicati nel frigo
                 if (!inventarioFrigo.includes(prodottoNome)) {
                     inventarioFrigo.push(prodottoNome);
                     localStorage.setItem('Frigo', JSON.stringify(inventarioFrigo));
                     renderizzaListe();
-                    alert(`Aggiunto al frigo: ${prodottoNome}`);
+                    alert(`Aggiunto: ${prodottoNome}`);
                 } else {
-                    alert(`${prodottoNome} è già presente nel frigorifero.`);
+                    alert(`${prodottoNome} è già nel frigorifero.`);
                 }
             } else {
-                alert(`Codice sconosciuto: ${decodedText}. Puoi aggiungerlo manualmente.`);
+                alert(`Codice letto: ${decodedText}\n(Prodotto non presente nel database)`);
             }
         },
         (errorMessage) => {
-            // Ignora gli errori di scansione continui
+            // Ignora gli errori di mancata scansione sui singoli fotogrammi
         }
     ).catch((err) => {
-        console.error("Impossibile avviare la fotocamera:", err);
+        console.error("Errore di avvio fotocamera:", err);
     });
 }
 

@@ -3,55 +3,444 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frigo Smart</title>
-    <link rel="stylesheet" href="style.css">
+    <title>FrigoSmart - Il tuo Frigo Intelligente</title>
+    <!-- Font Google Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome per le icone -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html5-qrcode per lo scanner di codici a barre -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border-radius: 16px;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            color: #065f46;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 5px;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .grid-layout {
+                grid-template-columns: 1fr 1fr;
+            }
+            .full-width {
+                grid-column: span 2;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .card-header i {
+            color: var(--primary);
+        }
+
+        /* Scanner */
+        #reader {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            border: none !important;
+            background: #000;
+        }
+
+        #reader video {
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        .scanner-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: #ef4444;
+        }
+        .btn-secondary:hover {
+            background-color: #dc2626;
+        }
+
+        /* Form Manuale */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: var(--primary);
+        }
+
+        /* Liste Prodotti */
+        .product-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background-color: #f9fafb;
+            border: 1px solid #f3f4f6;
+            border-radius: 10px;
+        }
+
+        .product-info h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .product-info p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 5px;
+            font-size: 1rem;
+            transition: color 0.2s;
+        }
+
+        .icon-btn:hover {
+            color: #ef4444;
+        }
+
+        .icon-btn.check:hover {
+            color: var(--primary);
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background-color: #e0e7ff;
+            color: #4338ca;
+            margin-top: 10px;
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>🍏 Il Mio Frigo Smart</h1>
+        <header>
+            <h1>🍏 FrigoSmart</h1>
+            <p>Gestisci la spesa e la scadenza degli alimenti in modo semplice</p>
+        </header>
 
-        <!-- SEZIONE SCANNER CON CANVAS -->
-        <div class="scanner-section">
-            <h2>📷 Scanner Codici a Barre</h2>
-            <div class="btn-group" style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
-                <button class="action-btn" style="background-color: #28a745; width: 100%; max-width: 300px; font-size: 16px; padding: 12px;" onclick="document.getElementById('file-input').click()">📸 Scatta Foto al Codice</button>
-            </div>
-
-            <!-- Input per lo scatto fotografico -->
-            <input type="file" id="file-input" accept="image/*" capture="environment" style="display: none;" onchange="elaboraScattoConCanvas(event)">
+        <div class="grid-layout">
             
-            <div id="reader" style="width: 100%; max-width: 400px; min-height: 200px; margin: 15px auto; background-color: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px dashed #ccc;">
-                <!-- Usiamo l'immagine visibile fin da subito per evitare conflitti con i browser -->
-                <img id="image-preview" style="width: 100%; height: auto; border-radius: 8px;" src="data:image/svg+xml;utf8,<svg xmlns='http://w3.org' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23f0f0f0'/></svg>" />
-            </div>
-            
-            <p id="scan-result" style="font-weight: bold; margin-top: 10px; color: #333; text-align: center;">Stato: In attesa dello scatto...</p>
-        </div>
+            <!-- CARD SCANNER -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <i class="fa-solid fa-barcode"></i> Scanner Codici a Barre
+                </div>
+                
+                <div id="reader"></div>
 
-        <!-- AGGIUNTA MANUALE -->
-        <div class="manual-section">
-            <h2>✍️ Aggiungi Prodotto Manualmente</h2>
-            <div class="input-group">
-                <input type="text" id="manual-input" placeholder="Es. Latte, Uova, Mela...">
-                <button class="add-btn" onclick="aggiungiManuale()">Aggiungi</button>
-            </div>
-        </div>
-
-        <!-- LISTE PRODOTTI -->
-        <div class="lists-container">
-            <div class="list-box">
-                <h2>❄️ Nel Frigorifero</h2>
-                <ul id="frigo-list"></ul>
+                <div class="scanner-actions">
+                    <button class="btn" id="start-scan-btn" onclick="startScanner()">
+                        <i class="fa-solid fa-camera"></i> Avvia Scanner
+                    </button>
+                    <button class="btn btn-secondary" id="stop-scan-btn" onclick="stopScanner()" style="display: none;">
+                        <i class="fa-solid fa-stop"></i> Ferma Scanner
+                    </button>
+                </div>
+                <div id="status-msg" class="status-badge" style="display: none;"></div>
             </div>
 
-            <div class="list-box">
-                <h2>🛒 Lista della Spesa</h2>
-                <ul id="spesa-list"></ul>
+            <!-- FORM AGGIUNTA MANUALE -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <i class="fa-solid fa-pen-to-square"></i> Aggiungi Prodotto
+                </div>
+                <form id="add-product-form" class="form-group" onsubmit="handleManualAdd(event)">
+                    <input type="text" id="prod-name" class="input-field" placeholder="Nome prodotto (es. Latte, Formaggio)" required>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="date" id="prod-date" class="input-field">
+                        <select id="prod-target" class="input-field">
+                            <option value="frigo">❄️ Nel Frigo</option>
+                            <option value="spesa">🛒 Lista Spesa</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn">
+                        <i class="fa-solid fa-plus"></i> Aggiungi alla Lista
+                    </button>
+                </form>
             </div>
+
+            <!-- FRIGORIFERO -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fa-solid fa-snowflake"></i> Nel Frigorifero
+                </div>
+                <ul class="product-list" id="frigo-list">
+                    <!-- Dinamico -->
+                </ul>
+            </div>
+
+            <!-- LISTA DELLA SPESA -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fa-solid fa-cart-shopping"></i> Lista della Spesa
+                </div>
+                <ul class="product-list" id="spesa-list">
+                    <!-- Dinamico -->
+                </ul>
+            </div>
+
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        let html5QrcodeScanner = null;
+        let frigoItems = JSON.parse(localStorage.getItem('frigoItems')) || [];
+        let spesaItems = JSON.parse(localStorage.getItem('spesaItems')) || [];
+
+        function renderLists() {
+            const frigoUl = document.getElementById('frigo-list');
+            const spesaUl = document.getElementById('spesa-list');
+
+            frigoUl.innerHTML = frigoItems.length === 0 ? '<p style="color: #9ca3af; font-size: 0.9rem;">Frigo vuoto.</p>' : '';
+            spesaUl.innerHTML = spesaItems.length === 0 ? '<p style="color: #9ca3af; font-size: 0.9rem;">Lista vuota.</p>' : '';
+
+            frigoItems.forEach((item, index) => {
+                frigoUl.innerHTML += `
+                    <li class="product-item">
+                        <div class="product-info">
+                            <h4>${item.name}</h4>
+                            ${item.date ? `<p>Scade il: ${item.date}</p>` : ''}
+                        </div>
+                        <div class="product-actions">
+                            <button class="icon-btn" onclick="deleteItem('frigo', ${index})"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </li>
+                `;
+            });
+
+            spesaItems.forEach((item, index) => {
+                spesaUl.innerHTML += `
+                    <li class="product-item">
+                        <div class="product-info">
+                            <h4>${item.name}</h4>
+                        </div>
+                        <div class="product-actions">
+                            <button class="icon-btn check" onclick="moveToFrigo(${index})"><i class="fa-solid fa-check"></i></button>
+                            <button class="icon-btn" onclick="deleteItem('spesa', ${index})"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </li>
+                `;
+            });
+
+            localStorage.setItem('frigoItems', JSON.stringify(frigoItems));
+            localStorage.setItem('spesaItems', JSON.stringify(spesaItems));
+        }
+
+        function addProduct(name, date, target) {
+            if (target === 'frigo') {
+                frigoItems.push({ name, date });
+            } else {
+                spesaItems.push({ name });
+            }
+            renderLists();
+        }
+
+        function handleManualAdd(e) {
+            e.preventDefault();
+            const name = document.getElementById('prod-name').value;
+            const date = document.getElementById('prod-date').value;
+            const target = document.getElementById('prod-target').value;
+
+            addProduct(name, date, target);
+            document.getElementById('add-product-form').reset();
+        }
+
+        function deleteItem(type, index) {
+            if (type === 'frigo') frigoItems.splice(index, 1);
+            else spesaItems.splice(index, 1);
+            renderLists();
+        }
+
+        function moveToFrigo(index) {
+            const item = spesaItems.splice(index, 1)[0];
+            frigoItems.push({ name: item.name, date: '' });
+            renderLists();
+        }
+
+        // FUNZIONI SCANNER
+        function startScanner() {
+            document.getElementById('start-scan-btn').style.display = 'none';
+            document.getElementById('stop-scan-btn').style.display = 'inline-flex';
+            showStatus('Inizializzazione fotocamera...');
+
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                config, 
+                onScanSuccess
+            ).catch(err => {
+                showStatus('Errore nell\'accesso alla fotocamera.');
+                stopScanner();
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    document.getElementById('start-scan-btn').style.display = 'inline-flex';
+                    document.getElementById('stop-scan-btn').style.display = 'none';
+                    document.getElementById('status-msg').style.display = 'none';
+                }).catch(err => console.error(err));
+            }
+        }
+
+        async function onScanSuccess(decodedText) {
+            showStatus(`Codice rilevato: ${decodedText}. Cerca prodotto...`);
+            
+            // Cerca il codice su Open Food Facts API
+            try {
+                const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${decodedText}.json`);
+                const data = await res.json();
+
+                if (data.status === 1 && data.product.product_name) {
+                    const prodName = data.product.product_name;
+                    addProduct(prodName, '', 'frigo');
+                    showStatus(`Aggiunto: ${prodName}`);
+                } else {
+                    addProduct(`Prodotto (${decodedText})`, '', 'frigo');
+                    showStatus(`Codice sconosciuto. Aggiunto come: Prodotto (${decodedText})`);
+                }
+            } catch (e) {
+                addProduct(`Prodotto (${decodedText})`, '', 'frigo');
+                showStatus(`Aggiunto codice: ${decodedText}`);
+            }
+
+            // Pausa temporanea dopo una scansione
+            setTimeout(() => {
+                showStatus('Inquadra un nuovo codice...');
+            }, 2000);
+        }
+
+        function showStatus(msg) {
+            const el = document.getElementById('status-msg');
+            el.innerText = msg;
+            el.style.display = 'inline-block';
+        }
+
+        // Init
+        renderLists();
+    </script>
 </body>
 </html>

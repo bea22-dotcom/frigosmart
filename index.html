@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FrigoSmart - Il tuo Frigo Intelligente</title>
-    <!-- Font Google Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome per le icone -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- html5-qrcode per lo scanner di codici a barre -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     
     <style>
@@ -20,214 +17,39 @@
             --text-main: #1f2937;
             --text-muted: #6b7280;
             --border-radius: 16px;
-            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; min-height: 100vh; }
+        .container { max-width: 800px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 20px; }
+        header h1 { font-size: 2rem; color: #065f46; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        
+        .grid-layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 768px) { .grid-layout { grid-template-columns: 1fr 1fr; } .full-width { grid-column: span 2; } }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            padding: 20px;
-            min-height: 100vh;
-        }
+        .card { background: var(--card-bg); border-radius: var(--border-radius); padding: 20px; box-shadow: var(--shadow); }
+        .card-header { font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; color: #111827; }
+        .card-header i { color: var(--primary); }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+        #reader { width: 100%; min-height: 250px; background: #000; border-radius: 12px; overflow: hidden; }
+        
+        .controls-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .select-field, .input-field { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; }
 
-        header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
+        .btn { background-color: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn-danger { background-color: #ef4444; }
+        .btn-danger:hover { background-color: #dc2626; }
 
-        header h1 {
-            font-size: 2.2rem;
-            color: #065f46;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        header p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            margin-top: 5px;
-        }
-
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
-
-        @media (min-width: 768px) {
-            .grid-layout {
-                grid-template-columns: 1fr 1fr;
-            }
-            .full-width {
-                grid-column: span 2;
-            }
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: var(--border-radius);
-            padding: 24px;
-            box-shadow: var(--shadow);
-            transition: transform 0.2s ease;
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 18px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #111827;
-        }
-
-        .card-header i {
-            color: var(--primary);
-        }
-
-        /* Scanner */
-        #reader {
-            width: 100%;
-            border-radius: 12px;
-            overflow: hidden;
-            border: none !important;
-            background: #000;
-        }
-
-        #reader video {
-            object-fit: cover;
-            border-radius: 12px;
-        }
-
-        .scanner-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 18px;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
-        }
-
-        .btn:hover {
-            background-color: var(--primary-hover);
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            background-color: #ef4444;
-        }
-        .btn-secondary:hover {
-            background-color: #dc2626;
-        }
-
-        /* Form Manuale */
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 12px 14px;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .input-field:focus {
-            border-color: var(--primary);
-        }
-
-        /* Liste Prodotti */
-        .product-list {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .product-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            background-color: #f9fafb;
-            border: 1px solid #f3f4f6;
-            border-radius: 10px;
-        }
-
-        .product-info h4 {
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-
-        .product-info p {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .product-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .icon-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 5px;
-            font-size: 1rem;
-            transition: color 0.2s;
-        }
-
-        .icon-btn:hover {
-            color: #ef4444;
-        }
-
-        .icon-btn.check:hover {
-            color: var(--primary);
-        }
-
-        .status-badge {
-            font-size: 0.8rem;
-            padding: 6px 12px;
-            border-radius: 20px;
-            background-color: #e0e7ff;
-            color: #4338ca;
-            margin-top: 10px;
-            display: inline-block;
-        }
+        .status-badge { font-size: 0.85rem; padding: 8px 12px; border-radius: 8px; background-color: #e0e7ff; color: #3730a3; margin-top: 10px; display: block; word-break: break-word; }
+        
+        .product-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        .product-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; }
+        .icon-btn { background: none; border: none; cursor: pointer; font-size: 1rem; color: #6b7280; padding: 4px; }
+        .icon-btn:hover { color: #ef4444; }
+        .icon-btn.check:hover { color: var(--primary); }
     </style>
 </head>
 <body>
@@ -235,75 +57,67 @@
     <div class="container">
         <header>
             <h1>🍏 FrigoSmart</h1>
-            <p>Gestisci la spesa e la scadenza degli alimenti in modo semplice</p>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Gestore frigo e lista spesa con scanner</p>
         </header>
 
         <div class="grid-layout">
             
-            <!-- CARD SCANNER -->
+            <!-- SCANNER CARD -->
             <div class="card full-width">
                 <div class="card-header">
-                    <i class="fa-solid fa-barcode"></i> Scanner Codici a Barre
+                    <i class="fa-solid fa-barcode"></i> Scanner Codici a Barre / QR
                 </div>
                 
                 <div id="reader"></div>
 
-                <div class="scanner-actions">
-                    <button class="btn" id="start-scan-btn" onclick="startScanner()">
-                        <i class="fa-solid fa-camera"></i> Avvia Scanner
+                <div class="controls-group">
+                    <select id="camera-select" class="select-field" style="display: none;">
+                        <option value="">Seleziona Fotocamera...</option>
+                    </select>
+
+                    <button class="btn" id="start-btn" onclick="startScanner()">
+                        <i class="fa-solid fa-camera"></i> Avvia Fotocamera
                     </button>
-                    <button class="btn btn-secondary" id="stop-scan-btn" onclick="stopScanner()" style="display: none;">
-                        <i class="fa-solid fa-stop"></i> Ferma Scanner
+                    <button class="btn btn-danger" id="stop-btn" onclick="stopScanner()" style="display: none;">
+                        <i class="fa-solid fa-stop"></i> Ferma Fotocamera
                     </button>
                 </div>
                 <div id="status-msg" class="status-badge" style="display: none;"></div>
             </div>
 
-            <!-- FORM AGGIUNTA MANUALE -->
+            <!-- MANUAL ADD -->
             <div class="card full-width">
-                <div class="card-header">
-                    <i class="fa-solid fa-pen-to-square"></i> Aggiungi Prodotto
-                </div>
-                <form id="add-product-form" class="form-group" onsubmit="handleManualAdd(event)">
-                    <input type="text" id="prod-name" class="input-field" placeholder="Nome prodotto (es. Latte, Formaggio)" required>
+                <div class="card-header"><i class="fa-solid fa-pen"></i> Aggiungi Prodotto</div>
+                <form id="add-form" style="display: flex; flex-direction: column; gap: 10px;" onsubmit="handleManualAdd(event)">
+                    <input type="text" id="prod-name" class="input-field" placeholder="Nome Prodotto" required>
                     <div style="display: flex; gap: 10px;">
                         <input type="date" id="prod-date" class="input-field">
-                        <select id="prod-target" class="input-field">
-                            <option value="frigo">❄️ Nel Frigo</option>
-                            <option value="spesa">🛒 Lista Spesa</option>
+                        <select id="prod-target" class="select-field">
+                            <option value="frigo">Nel Frigo</option>
+                            <option value="spesa">Lista Spesa</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn">
-                        <i class="fa-solid fa-plus"></i> Aggiungi alla Lista
-                    </button>
+                    <button type="submit" class="btn"><i class="fa-solid fa-plus"></i> Aggiungi</button>
                 </form>
             </div>
 
-            <!-- FRIGORIFERO -->
+            <!-- FRIGO -->
             <div class="card">
-                <div class="card-header">
-                    <i class="fa-solid fa-snowflake"></i> Nel Frigorifero
-                </div>
-                <ul class="product-list" id="frigo-list">
-                    <!-- Dinamico -->
-                </ul>
+                <div class="card-header"><i class="fa-solid fa-snowflake"></i> Frigorifero</div>
+                <ul class="product-list" id="frigo-list"></ul>
             </div>
 
-            <!-- LISTA DELLA SPESA -->
+            <!-- SPESA -->
             <div class="card">
-                <div class="card-header">
-                    <i class="fa-solid fa-cart-shopping"></i> Lista della Spesa
-                </div>
-                <ul class="product-list" id="spesa-list">
-                    <!-- Dinamico -->
-                </ul>
+                <div class="card-header"><i class="fa-solid fa-cart-shopping"></i> Lista Spesa</div>
+                <ul class="product-list" id="spesa-list"></ul>
             </div>
 
         </div>
     </div>
 
     <script>
-        let html5QrcodeScanner = null;
+        let html5QrCode = null;
         let frigoItems = JSON.parse(localStorage.getItem('frigoItems')) || [];
         let spesaItems = JSON.parse(localStorage.getItem('spesaItems')) || [];
 
@@ -311,35 +125,29 @@
             const frigoUl = document.getElementById('frigo-list');
             const spesaUl = document.getElementById('spesa-list');
 
-            frigoUl.innerHTML = frigoItems.length === 0 ? '<p style="color: #9ca3af; font-size: 0.9rem;">Frigo vuoto.</p>' : '';
-            spesaUl.innerHTML = spesaItems.length === 0 ? '<p style="color: #9ca3af; font-size: 0.9rem;">Lista vuota.</p>' : '';
+            frigoUl.innerHTML = frigoItems.length === 0 ? '<p style="color: #9ca3af; font-size: 0.85rem;">Vuoto</p>' : '';
+            spesaUl.innerHTML = spesaItems.length === 0 ? '<p style="color: #9ca3af; font-size: 0.85rem;">Vuoto</p>' : '';
 
             frigoItems.forEach((item, index) => {
                 frigoUl.innerHTML += `
                     <li class="product-item">
-                        <div class="product-info">
-                            <h4>${item.name}</h4>
-                            ${item.date ? `<p>Scade il: ${item.date}</p>` : ''}
+                        <div>
+                            <strong>${item.name}</strong>
+                            ${item.date ? `<br><small style="color:#6b7280">Scadenza: ${item.date}</small>` : ''}
                         </div>
-                        <div class="product-actions">
-                            <button class="icon-btn" onclick="deleteItem('frigo', ${index})"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </li>
-                `;
+                        <button class="icon-btn" onclick="deleteItem('frigo', ${index})"><i class="fa-solid fa-trash"></i></button>
+                    </li>`;
             });
 
             spesaItems.forEach((item, index) => {
                 spesaUl.innerHTML += `
                     <li class="product-item">
-                        <div class="product-info">
-                            <h4>${item.name}</h4>
-                        </div>
-                        <div class="product-actions">
+                        <div><strong>${item.name}</strong></div>
+                        <div>
                             <button class="icon-btn check" onclick="moveToFrigo(${index})"><i class="fa-solid fa-check"></i></button>
                             <button class="icon-btn" onclick="deleteItem('spesa', ${index})"><i class="fa-solid fa-trash"></i></button>
                         </div>
-                    </li>
-                `;
+                    </li>`;
             });
 
             localStorage.setItem('frigoItems', JSON.stringify(frigoItems));
@@ -347,11 +155,8 @@
         }
 
         function addProduct(name, date, target) {
-            if (target === 'frigo') {
-                frigoItems.push({ name, date });
-            } else {
-                spesaItems.push({ name });
-            }
+            if (target === 'frigo') frigoItems.push({ name, date });
+            else spesaItems.push({ name });
             renderLists();
         }
 
@@ -360,9 +165,8 @@
             const name = document.getElementById('prod-name').value;
             const date = document.getElementById('prod-date').value;
             const target = document.getElementById('prod-target').value;
-
             addProduct(name, date, target);
-            document.getElementById('add-product-form').reset();
+            document.getElementById('add-form').reset();
         }
 
         function deleteItem(type, index) {
@@ -377,69 +181,104 @@
             renderLists();
         }
 
-        // FUNZIONI SCANNER
-        function startScanner() {
-            document.getElementById('start-scan-btn').style.display = 'none';
-            document.getElementById('stop-scan-btn').style.display = 'inline-flex';
-            showStatus('Inizializzazione fotocamera...');
+        // SCANNER LOGIC
+        async function startScanner() {
+            showStatus("Richiesta permessi fotocamera...");
+            
+            try {
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode("reader");
+                }
 
-            html5QrcodeScanner = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+                const devices = await Html5Qrcode.getCameras();
+                if (!devices || devices.length === 0) {
+                    showStatus("Nessuna fotocamera trovata sul dispositivo.");
+                    return;
+                }
 
-            html5QrcodeScanner.start(
-                { facingMode: "environment" }, 
-                config, 
-                onScanSuccess
-            ).catch(err => {
-                showStatus('Errore nell\'accesso alla fotocamera.');
-                stopScanner();
-            });
+                const cameraSelect = document.getElementById('camera-select');
+                cameraSelect.innerHTML = '';
+                devices.forEach(device => {
+                    const opt = document.createElement('option');
+                    opt.value = device.id;
+                    opt.text = device.label || `Fotocamera ${cameraSelect.length + 1}`;
+                    cameraSelect.appendChild(opt);
+                });
+
+                // Seleziona preferibilmente la fotocamera posteriore
+                let cameraId = devices[0].id;
+                const backCamera = devices.find(dev => dev.label.toLowerCase().includes('back') || dev.label.toLowerCase().includes('posteriore'));
+                if (backCamera) cameraId = backCamera.id;
+
+                if (devices.length > 1) cameraSelect.style.display = 'block';
+
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 150 },
+                    aspectRatio: 1.0,
+                    formatsToSupport: [
+                        Html5QrcodeSupportedFormats.EAN_13,
+                        Html5QrcodeSupportedFormats.EAN_8,
+                        Html5QrcodeSupportedFormats.UPC_A,
+                        Html5QrcodeSupportedFormats.UPC_E,
+                        Html5QrcodeSupportedFormats.CODE_128,
+                        Html5QrcodeSupportedFormats.QR_CODE
+                    ]
+                };
+
+                await html5QrCode.start(
+                    cameraId,
+                    config,
+                    onScanSuccess
+                );
+
+                document.getElementById('start-btn').style.display = 'none';
+                document.getElementById('stop-btn').style.display = 'flex';
+                showStatus("Scanner attivo. Inquadra un codice a barre.");
+
+            } catch (err) {
+                console.error(err);
+                showStatus("Errore: Assicurati di aver dato i permessi per la fotocamera nelle impostazioni del browser.");
+            }
         }
 
-        function stopScanner() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.stop().then(() => {
-                    document.getElementById('start-scan-btn').style.display = 'inline-flex';
-                    document.getElementById('stop-scan-btn').style.display = 'none';
-                    document.getElementById('status-msg').style.display = 'none';
-                }).catch(err => console.error(err));
+        async function stopScanner() {
+            if (html5QrCode && html5QrCode.isScanning) {
+                await html5QrCode.stop();
+                document.getElementById('start-btn').style.display = 'flex';
+                document.getElementById('stop-btn').style.display = 'none';
+                document.getElementById('camera-select').style.display = 'none';
+                showStatus("Scanner fermato.");
             }
         }
 
         async function onScanSuccess(decodedText) {
-            showStatus(`Codice rilevato: ${decodedText}. Cerca prodotto...`);
+            showStatus(`Codice scansionato: ${decodedText}. Ricerca in corso...`);
             
-            // Cerca il codice su Open Food Facts API
             try {
                 const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${decodedText}.json`);
                 const data = await res.json();
 
-                if (data.status === 1 && data.product.product_name) {
+                if (data.status === 1 && data.product && data.product.product_name) {
                     const prodName = data.product.product_name;
                     addProduct(prodName, '', 'frigo');
                     showStatus(`Aggiunto: ${prodName}`);
                 } else {
                     addProduct(`Prodotto (${decodedText})`, '', 'frigo');
-                    showStatus(`Codice sconosciuto. Aggiunto come: Prodotto (${decodedText})`);
+                    showStatus(`Codice non trovato nei database. Aggiunto come Prodotto (${decodedText})`);
                 }
             } catch (e) {
                 addProduct(`Prodotto (${decodedText})`, '', 'frigo');
-                showStatus(`Aggiunto codice: ${decodedText}`);
+                showStatus(`Aggiunto: Prodotto (${decodedText})`);
             }
-
-            // Pausa temporanea dopo una scansione
-            setTimeout(() => {
-                showStatus('Inquadra un nuovo codice...');
-            }, 2000);
         }
 
         function showStatus(msg) {
             const el = document.getElementById('status-msg');
             el.innerText = msg;
-            el.style.display = 'inline-block';
+            el.style.display = 'block';
         }
 
-        // Init
         renderLists();
     </script>
 </body>

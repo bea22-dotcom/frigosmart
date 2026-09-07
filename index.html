@@ -78,10 +78,9 @@
         .card { background: var(--card-bg); border-radius: var(--border-radius); padding: 20px; box-shadow: var(--shadow); }
         .card-header { font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; color: #111827; }
 
-        #reader { width: 100%; min-height: 250px; background: #000; border-radius: 12px; overflow: hidden; }
+        #reader { width: 100%; min-height: 280px; background: #000; border-radius: 12px; overflow: hidden; }
         
         .controls-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-        .select-field, .input-field { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; }
 
         .btn { background-color: var(--primary-frigo); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
         .btn-wardrobe { background-color: var(--primary-wardrobe); }
@@ -98,6 +97,7 @@
         .icon-btn { background: none; border: none; cursor: pointer; font-size: 1rem; color: #6b7280; padding: 4px; }
         .icon-btn:hover { color: #ef4444; }
         .icon-btn.check:hover { color: var(--primary-frigo); }
+        .select-field, .input-field { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; }
     </style>
 </head>
 <body>
@@ -121,16 +121,14 @@
         <!-- SCANNER UNIFICATO -->
         <div class="card full-width" style="margin-bottom: 20px;">
             <div class="card-header" id="scanner-title">
-                <i class="fa-solid fa-barcode"></i> Scanner Codici a Barre / QR Code
+                <i class="fa-solid fa-barcode"></i> Scanner Ottimizzato (Fotocamera Posteriore)
             </div>
             
             <div id="reader"></div>
 
             <div class="controls-group">
-                <select id="camera-select" class="select-field" style="display: none;"></select>
-
                 <button class="btn" id="start-btn" onclick="startScanner()">
-                    <i class="fa-solid fa-camera"></i> Avvia Fotocamera
+                    <i class="fa-solid fa-camera"></i> Avvia Fotocamera Posteriore
                 </button>
                 <button class="btn btn-danger" id="stop-btn" onclick="stopScanner()" style="display: none;">
                     <i class="fa-solid fa-stop"></i> Ferma Fotocamera
@@ -211,7 +209,6 @@
         let currentTab = 'frigo';
         let html5QrCode = null;
 
-        // Dati salvati
         let frigoItems = JSON.parse(localStorage.getItem('frigoItems')) || [];
         let spesaItems = JSON.parse(localStorage.getItem('spesaItems')) || [];
         let wardrobeItems = JSON.parse(localStorage.getItem('wardrobeItems')) || [];
@@ -234,7 +231,6 @@
         }
 
         function renderLists() {
-            // Rendering Frigo & Spesa
             const frigoUl = document.getElementById('frigo-list');
             const spesaUl = document.getElementById('spesa-list');
 
@@ -263,7 +259,6 @@
                     </li>`;
             });
 
-            // Rendering Guardaroba & Lavanderia
             const wardrobeUl = document.getElementById('wardrobe-list');
             const laundryUl = document.getElementById('laundry-list');
 
@@ -304,7 +299,6 @@
             localStorage.setItem('laundryItems', JSON.stringify(laundryItems));
         }
 
-        // AGGIUNTA MANUALE
         function handleManualFrigoAdd(e) {
             e.preventDefault();
             const name = document.getElementById('prod-name').value;
@@ -331,7 +325,6 @@
             document.getElementById('add-wardrobe-form').reset();
         }
 
-        // SPOSTAMENTI E RIMOZIONE
         function deleteItem(type, index) {
             if (type === 'frigo') frigoItems.splice(index, 1);
             else if (type === 'spesa') spesaItems.splice(index, 1);
@@ -358,40 +351,29 @@
             renderLists();
         }
 
-        // LOGICA SCANNER CAMERA
+        // LOGICA SCANNER CON FOCUS E FOTOCAMERA POSTERIORE FORZATA
         async function startScanner() {
-            showStatus("Richiesta permessi fotocamera...");
+            showStatus("Attivazione fotocamera posteriore ed auto-focus...");
             
             try {
                 if (!html5QrCode) {
                     html5QrCode = new Html5Qrcode("reader");
                 }
 
-                const devices = await Html5Qrcode.getCameras();
-                if (!devices || devices.length === 0) {
-                    showStatus("Nessuna fotocamera trovata.");
-                    return;
-                }
-
-                const cameraSelect = document.getElementById('camera-select');
-                cameraSelect.innerHTML = '';
-                devices.forEach(device => {
-                    const opt = document.createElement('option');
-                    opt.value = device.id;
-                    opt.text = device.label || `Fotocamera ${cameraSelect.length + 1}`;
-                    cameraSelect.appendChild(opt);
-                });
-
-                let cameraId = devices[0].id;
-                const backCamera = devices.find(dev => dev.label.toLowerCase().includes('back') || dev.label.toLowerCase().includes('posteriore'));
-                if (backCamera) cameraId = backCamera.id;
-
-                if (devices.length > 1) cameraSelect.style.display = 'block';
+                // Configurazione per forzare la fotocamera posteriore e l'alta risoluzione
+                const cameraConfig = { 
+                    facingMode: { exact: "environment" } 
+                };
 
                 const config = {
-                    fps: 10,
-                    qrbox: { width: 250, height: 150 },
-                    aspectRatio: 1.0,
+                    fps: 15,
+                    qrbox: { width: 280, height: 180 }, // Box di lettura bilanciato
+                    videoConstraints: {
+                        facingMode: "environment",
+                        width: { min: 1280, ideal: 1920 },
+                        height: { min: 720, ideal: 1080 },
+                        advanced: [{ focusMode: "continuous" }] // Messa a fuoco continua hardware
+                    },
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.EAN_13,
                         Html5QrcodeSupportedFormats.EAN_8,
@@ -402,15 +384,21 @@
                     ]
                 };
 
-                await html5QrCode.start(cameraId, config, onScanSuccess);
+                // Avvio con fallback in caso il dispositivo non supporti { exact: "environment" }
+                try {
+                    await html5QrCode.start(cameraConfig, config, onScanSuccess);
+                } catch(e) {
+                    // Fallback a facingMode standard se exact fallisce
+                    await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+                }
 
                 document.getElementById('start-btn').style.display = 'none';
                 document.getElementById('stop-btn').style.display = 'flex';
-                showStatus(`Scanner attivo per la sezione ${currentTab === 'frigo' ? 'Frigo' : 'Guardaroba'}.`);
+                showStatus(`Scanner attivo per ${currentTab === 'frigo' ? 'Frigo' : 'Guardaroba'}. Metti a fuoco il codice.`);
 
             } catch (err) {
                 console.error(err);
-                showStatus("Errore nell'accesso alla fotocamera.");
+                showStatus("Errore nell'accesso alla fotocamera posteriore. Verifica i permessi nel browser.");
             }
         }
 
@@ -419,13 +407,12 @@
                 await html5QrCode.stop();
                 document.getElementById('start-btn').style.display = 'flex';
                 document.getElementById('stop-btn').style.display = 'none';
-                document.getElementById('camera-select').style.display = 'none';
                 showStatus("Scanner fermato.");
             }
         }
 
         async function onScanSuccess(decodedText) {
-            showStatus(`Scansionato: ${decodedText}. Ricerca info in corso...`);
+            showStatus(`Codice scansionato: ${decodedText}. Ricerca info in corso...`);
 
             if (currentTab === 'frigo') {
                 try {
@@ -445,7 +432,6 @@
                     showStatus(`Aggiunto al Frigo: Codice (${decodedText})`);
                 }
             } else {
-                // Sezione Guardaroba
                 wardrobeItems.push({ name: `Capo/Etichetta (${decodedText})`, category: 'Abbigliamento' });
                 showStatus(`Aggiunto all'Armadio: Capo (${decodedText})`);
             }
